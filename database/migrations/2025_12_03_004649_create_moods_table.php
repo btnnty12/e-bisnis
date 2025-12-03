@@ -11,13 +11,10 @@ return new class extends Migration
      */
    public function up()
 {
-    Schema::create('users', function (Blueprint $table) {
+    Schema::create('moods', function (Blueprint $table) {
         $table->id();
-        $table->string('name', 100);
-        $table->string('email', 100)->unique();
-        $table->string('password');
-        $table->enum('role', ['admin', 'tenant', 'customer'])->default('customer');
-        $table->foreignId('tenant_id')->nullable()->constrained('tenants')->nullOnDelete();
+        $table->string('mood_name', 50);
+        $table->text('description')->nullable();
         $table->timestamps();
     });
 }
@@ -27,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('moods');
     }
 };

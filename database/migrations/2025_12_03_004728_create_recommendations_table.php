@@ -11,13 +11,11 @@ return new class extends Migration
      */
    public function up()
 {
-    Schema::create('users', function (Blueprint $table) {
+    Schema::create('recommendations', function (Blueprint $table) {
         $table->id();
-        $table->string('name', 100);
-        $table->string('email', 100)->unique();
-        $table->string('password');
-        $table->enum('role', ['admin', 'tenant', 'customer'])->default('customer');
-        $table->foreignId('tenant_id')->nullable()->constrained('tenants')->nullOnDelete();
+        $table->foreignId('mood_id')->constrained('moods')->onDelete('cascade');
+        $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
+        $table->integer('score')->default(0);
         $table->timestamps();
     });
 }
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('recommendations');
     }
 };
