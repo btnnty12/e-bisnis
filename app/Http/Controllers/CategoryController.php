@@ -22,25 +22,29 @@ class CategoryController extends Controller
         return Category::create($data);
     }
 
-    public function show(Category $category)
+    public function show($id)
     {
-        return $category->load('mood');
+        return Category::with('mood')->findOrFail($id);
     }
 
-    public function update(Request $request, Category $category)
+    public function update(Request $request, $id)
     {
+        $category = Category::findOrFail($id);
+
         $data = $request->validate([
-            'category_name' => 'required|string|max:100',
-            'mood_id'       => 'required|exists:moods,id',
+            'category_name' => 'sometimes|string|max:100',
+            'mood_id'       => 'sometimes|exists:moods,id',
         ]);
 
         $category->update($data);
+
         return $category;
     }
 
-    public function destroy(Category $category)
+    public function destroy($id)
     {
-        $category->delete();
-        return response()->json(['message' => 'Deleted']);
+        Category::destroy($id);
+
+        return response()->json(['message' => 'Category dihapus']);
     }
 }

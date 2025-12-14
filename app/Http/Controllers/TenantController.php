@@ -9,7 +9,7 @@ class TenantController extends Controller
 {
     public function index()
     {
-        return Tenant::all();
+        return Tenant::with('menus')->get();
     }
 
     public function store(Request $request)
@@ -22,25 +22,29 @@ class TenantController extends Controller
         return Tenant::create($data);
     }
 
-    public function show(Tenant $tenant)
+    public function show($id)
     {
-        return $tenant;
+        return Tenant::with('menus')->findOrFail($id);
     }
 
-    public function update(Request $request, Tenant $tenant)
+    public function update(Request $request, $id)
     {
+        $tenant = Tenant::findOrFail($id);
+
         $data = $request->validate([
-            'tenant_name' => 'required|string|max:100',
+            'tenant_name' => 'sometimes|string|max:100',
             'location'    => 'nullable|string|max:100',
         ]);
 
         $tenant->update($data);
+
         return $tenant;
     }
 
-    public function destroy(Tenant $tenant)
+    public function destroy($id)
     {
-        $tenant->delete();
-        return response()->json(['message' => 'Deleted']);
+        Tenant::destroy($id);
+
+        return response()->json(['message' => 'Tenant dihapus']);
     }
 }

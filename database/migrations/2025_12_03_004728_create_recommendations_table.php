@@ -6,24 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-   public function up()
-{
-    Schema::create('recommendations', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('mood_id')->constrained('moods')->onDelete('cascade');
-        $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
-        $table->integer('score')->default(0);
-        $table->timestamps();
-    });
-}
+    public function up()
+    {
+        Schema::create('recommendations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('mood_id')->constrained('moods')->onDelete('cascade');
+            $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
+            $table->integer('score');
+            $table->timestamps();
+        });
+    }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('recommendations');
     }

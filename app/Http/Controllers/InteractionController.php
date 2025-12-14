@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Interaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class InteractionController extends Controller
 {
@@ -15,22 +16,26 @@ class InteractionController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
             'mood_id' => 'required|exists:moods,id',
             'menu_id' => 'required|exists:menus,id',
         ]);
 
-        return Interaction::create($data);
+        return Interaction::create([
+            'user_id' => Auth::id(),
+            'mood_id' => $data['mood_id'],
+            'menu_id' => $data['menu_id'],
+        ]);
     }
 
-    public function show(Interaction $interaction)
+    public function show($id)
     {
-        return $interaction->load(['user', 'mood', 'menu']);
+        return Interaction::with(['user', 'mood', 'menu'])->findOrFail($id);
     }
 
-    public function destroy(Interaction $interaction)
+    public function destroy($id)
     {
-        $interaction->delete();
-        return response()->json(['message' => 'Deleted']);
+        Interaction::destroy($id);
+
+        return response()->json(['message' => 'Interaction dihapus']);
     }
 }

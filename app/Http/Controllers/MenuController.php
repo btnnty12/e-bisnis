@@ -20,35 +20,39 @@ class MenuController extends Controller
             'menu_name'   => 'required|string|max:100',
             'price'       => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'image'       => 'nullable|string|max:255',
+            'image'       => 'nullable|string',
         ]);
 
         return Menu::create($data);
     }
 
-    public function show(Menu $menu)
+    public function show($id)
     {
-        return $menu->load(['tenant', 'category']);
+        return Menu::with(['tenant', 'category'])->findOrFail($id);
     }
 
-    public function update(Request $request, Menu $menu)
+    public function update(Request $request, $id)
     {
-        $data = $request->validate([
-            'tenant_id'   => 'required|exists:tenants,id',
-            'category_id' => 'required|exists:categories,id',
-            'menu_name'   => 'required|string|max:100',
-            'price'       => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'image'       => 'nullable|string|max:255',
-        ]);
+        $menu = Menu::findOrFail($id);
 
-        $menu->update($data);
+        $menu->update($request->only([
+            'tenant_id',
+            'category_id',
+            'menu_name',
+            'price',
+            'description',
+            'image'
+        ]));
+
         return $menu;
     }
 
-    public function destroy(Menu $menu)
+    public function destroy($id)
     {
-        $menu->delete();
-        return response()->json(['message' => 'Deleted']);
+        Menu::destroy($id);
+
+        return response()->json([
+            'message' => 'Menu berhasil dihapus'
+        ]);
     }
 }

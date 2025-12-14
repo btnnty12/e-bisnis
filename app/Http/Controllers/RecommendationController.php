@@ -17,32 +17,36 @@ class RecommendationController extends Controller
         $data = $request->validate([
             'mood_id'     => 'required|exists:moods,id',
             'category_id' => 'required|exists:categories,id',
-            'score'       => 'required|integer|min:0',
+            'score'       => 'required|integer',
         ]);
 
         return Recommendation::create($data);
     }
 
-    public function show(Recommendation $recommendation)
+    public function show($id)
     {
-        return $recommendation->load(['mood', 'category']);
+        return Recommendation::with(['mood', 'category'])->findOrFail($id);
     }
 
-    public function update(Request $request, Recommendation $recommendation)
+    public function update(Request $request, $id)
     {
+        $rec = Recommendation::findOrFail($id);
+
         $data = $request->validate([
-            'mood_id'     => 'required|exists:moods,id',
-            'category_id' => 'required|exists:categories,id',
-            'score'       => 'required|integer|min:0',
+            'mood_id'     => 'sometimes|exists:moods,id',
+            'category_id' => 'sometimes|exists:categories,id',
+            'score'       => 'sometimes|integer',
         ]);
 
-        $recommendation->update($data);
-        return $recommendation;
+        $rec->update($data);
+
+        return $rec;
     }
 
-    public function destroy(Recommendation $recommendation)
+    public function destroy($id)
     {
-        $recommendation->delete();
-        return response()->json(['message' => 'Deleted']);
+        Recommendation::destroy($id);
+
+        return response()->json(['message' => 'Recommendation dihapus']);
     }
 }
