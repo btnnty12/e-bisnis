@@ -7,6 +7,23 @@ use Illuminate\Http\Request;
 
 class RecommendationController extends Controller
 {
+    /**
+     * Rules sederhana untuk mesin rekomendasi
+     * Maps mood ke kategori makanan yang direkomendasikan
+     */
+    protected $rules = [
+        'senang'  => ['dessert', 'minuman'],
+        'stress'  => ['comfort', 'hangat'],
+        'lelah'   => ['berat'],
+        'sedih'   => ['manis'],
+        'excited' => ['pedas'],
+    ];
+    public function recommendByMood($mood_id)
+    {
+        return \App\Models\Menu::whereHas('category', function ($q) use ($mood_id) {
+            $q->where('mood_id', $mood_id);
+        })->with('tenant')->get();
+    }
     public function index()
     {
         return Recommendation::with(['mood', 'category'])->get();

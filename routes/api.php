@@ -9,6 +9,8 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\EventController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +29,14 @@ Route::post('/login', [AuthController::class, 'login']);       // Login dan dapa
 | Route ini membutuhkan token Bearer dari login.
 */
 
+Route::get('/recommendation/mood/{mood_id}',
+    [RecommendationController::class, 'recommendByMood']
+);
+
+Route::post('/interactions',
+    [InteractionController::class, 'storePublic']
+);
+
 Route::middleware('auth:sanctum')->group(function () {
 
     // Auth
@@ -35,9 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Resources
     Route::apiResource('moods', MoodController::class);          // CRUD Mood
-    Route::apiResource('categories', CategoryController::class); // CRUD Category
+    Route::apiResource('categories', CategoryController::class);     // CRUD Category
     Route::apiResource('tenants', TenantController::class);      // CRUD Tenant
     Route::apiResource('menus', MenuController::class);          // CRUD Menu
+    Route::apiResource('events', EventController::class);        // CRUD Event
 
     // Interactions (hanya index, store, show, destroy)
     Route::apiResource('interactions', InteractionController::class)
@@ -45,4 +56,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Recommendations
     Route::apiResource('recommendations', RecommendationController::class);
+
+    // Statistics
+    Route::get('/statistics/before-after', [StatisticsController::class, 'beforeAfter']);
+    Route::get('/statistics/per-event', [StatisticsController::class, 'perEvent']);
 });

@@ -11,7 +11,7 @@ class Interaction extends Model
 
     public $timestamps = false; // hanya ada created_at
 
-    protected $fillable = ['user_id', 'mood_id', 'menu_id'];
+    protected $fillable = ['user_id', 'mood_id', 'menu_id', 'event_id', 'session_id'];
 
     public function user()
     {
@@ -26,5 +26,10 @@ class Interaction extends Model
     public function menu()
     {
         return $this->belongsTo(Menu::class, 'menu_id');
+    }
+
+    public function event()
+    {
+        return $this->belongsTo(Event::class, 'event_id');
     }
 }

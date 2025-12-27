@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             TenantSeeder::class,
             MenuSeeder::class,
+            EventSeeder::class,
             UserSeeder::class,
             RecommendationSeeder::class,
         ]);

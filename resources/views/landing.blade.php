@@ -79,14 +79,28 @@
 
   <!-- Top Navigation -->
   <div class="absolute top-4 right-4 z-10 flex space-x-4">
-    <div class="flex space-x-4 sm:space-x-6">
+    <div class="flex space-x-4 sm:space-x-6 items-center">
+      @auth
+        <a href="{{ route('home') }}" 
+          class="px-4 py-2 bg-lime-500 text-white rounded-lg font-semibold hover:bg-lime-600 transition text-sm sm:text-base">
+          Dashboard
+        </a>
+        <form action="{{ route('logout') }}" method="POST" class="inline">
+          @csrf
+          <button type="submit" 
+            class="px-4 py-2 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition text-sm sm:text-base">
+            Logout
+          </button>
+        </form>
+      @else
+        <a href="{{ route('login') }}" 
+          class="px-4 py-2 bg-lime-500 text-white rounded-lg font-semibold hover:bg-lime-600 transition text-sm sm:text-base">
+          Login
+        </a>
+      @endauth
       <button onclick="window.location.href='{{ route('landing') }}'"
         class="nav-btn text-gray-600 hover:text-gray-800 text-2xl sm:text-3xl font-bold p-2 rounded-full hover:bg-gray-200">
         ☜
-      </button>
-      <button onclick="window.location.href='{{ route('home') }}'"
-        class="nav-btn text-gray-600 hover:text-gray-800 text-2xl sm:text-3xl font-bold p-2 rounded-full hover:bg-gray-200">
-        ☞
       </button>
     </div>
   </div>
@@ -134,6 +148,47 @@
       });
     })();
   </script>
+
+  @guest
+  <script>
+    (function(){
+      // Auto-redirect guests to home after a short countdown
+      let countdown = 3; // seconds
+      const container = document.createElement('div');
+      container.className = 'fixed bottom-6 right-4 bg-white px-4 py-2 rounded shadow text-sm text-gray-700 flex items-center space-x-3';
+      container.style.zIndex = 9999;
+      container.id = 'guest-redirect';
+
+      const text = document.createElement('span');
+      text.id = 'guest-redirect-text';
+      text.innerText = `Mengalihkan ke Home dalam ${countdown}s`;
+
+      const btn = document.createElement('button');
+      btn.className = 'text-xs underline text-gray-500 hover:text-gray-700';
+      btn.type = 'button';
+      btn.innerText = 'Lewati';
+      btn.addEventListener('click', function(){
+        if (window.__guestRedirectInterval) clearInterval(window.__guestRedirectInterval);
+        container.remove();
+      });
+
+      container.appendChild(text);
+      container.appendChild(btn);
+      document.body.appendChild(container);
+
+      window.__guestRedirectInterval = setInterval(function(){
+        countdown -= 1;
+        if (countdown <= 0) {
+          clearInterval(window.__guestRedirectInterval);
+          window.location.href = '{{ route('home') }}';
+        } else {
+          const el = document.getElementById('guest-redirect-text');
+          if (el) el.innerText = `Mengalihkan ke Home dalam ${countdown}s`;
+        }
+      }, 1000);
+    })();
+  </script>
+  @endguest
 
 </body>
 </html>

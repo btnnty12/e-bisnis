@@ -7,6 +7,53 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## MoodFood - Sistem Rekomendasi Makanan Berdasarkan Mood
+
+Aplikasi web untuk memberikan rekomendasi makanan berdasarkan mood pengguna. Sistem ini dilengkapi dengan dashboard admin/tenant untuk pengelolaan menu dan kategori mood.
+
+## Setup Database MySQL
+
+1. Buat database MySQL baru:
+   ```sql
+   CREATE DATABASE moodfood CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+2. Konfigurasi file `.env`:
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=moodfood
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
+
+3. Jalankan migration:
+   ```bash
+   php artisan migrate
+   ```
+
+4. Jalankan seeder untuk dummy data:
+   ```bash
+   php artisan db:seed
+   ```
+
+## Fitur
+
+- **Dashboard Admin/Tenant**: Pengelolaan menu, kategori mood, dan mood
+- **Statistik**: Laporan statistik sebelum/sesudah tanggal dan per event
+- **Menu Management**: CRUD menu dengan informasi nama, harga, tenant, dan kategori
+- **Kategori Mood**: Pengelolaan kategori yang terkait dengan mood
+- **Mood Management**: Pengelolaan mood (Senang, Sedih, Stress, Lelah, Biasa Aja, Excited)
+
+## Routes
+
+- `/dashboard` - Dashboard utama
+- `/dashboard/menus` - Pengelolaan menu
+- `/dashboard/categories` - Pengelolaan kategori mood
+- `/dashboard/moods` - Pengelolaan mood
+- `/statistics` - Halaman statistik
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
