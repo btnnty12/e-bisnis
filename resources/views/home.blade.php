@@ -163,32 +163,32 @@
   </div>
 
   <!-- Mood Options -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8 px-4 w-full max-w-2xl">
-    <a href="{{ route('mood.show', 'senang', false) }}" class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md hover:shadow-xl">
-      <p class="text-2xl sm:text-3xl md:text-4xl mb-2">😊</p>
-      <span class="font-semibold text-xs sm:text-sm md:text-base">Senang</span>
-    </a>
-    <a href="{{ route('mood.show', 'sedih', false) }}" class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md hover:shadow-xl">
-      <p class="text-2xl sm:text-3xl md:text-4xl mb-2">😔</p>
-      <span class="font-semibold text-xs sm:text-sm md:text-base">Sedih</span>
-    </a>
-    <a href="{{ route('mood.show', 'stress', false) }}" class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md hover:shadow-xl">
-      <p class="text-2xl sm:text-3xl md:text-4xl mb-2">🤯</p>
-      <span class="font-semibold text-xs sm:text-sm md:text-base">Stress</span>
-    </a>
-    <a href="{{ route('mood.show', 'lelah', false) }}" class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md hover:shadow-xl">
-      <p class="text-2xl sm:text-3xl md:text-4xl mb-2">😴</p>
-      <span class="font-semibold text-xs sm:text-sm md:text-base">Lelah</span>
-    </a>
-    <a href="{{ route('mood.show', 'biasa-aja', false) }}" class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md hover:shadow-xl">
-      <p class="text-2xl sm:text-3xl md:text-4xl mb-2">😐</p>
-      <span class="font-semibold text-xs sm:text-sm md:text-base">Biasa Aja</span>
-    </a>
-    <a href="{{ route('mood.show', 'excited', false) }}" class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md hover:shadow-xl">
-      <p class="text-2xl sm:text-3xl md:text-4xl mb-2">🤩</p>
-      <span class="font-semibold text-xs sm:text-sm md:text-base">Excited</span>
-    </a>
-  </div>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8 px-4 w-full max-w-2xl mx-auto">
+    @php
+        $emojiMap = [
+            'senang' => '😊',
+            'sedih' => '😔',
+            'stress' => '🤯',
+            'lelah' => '😴',
+            'biasa-aja' => '😐',
+            'excited' => '🤩',
+        ];
+        $defaultEmojis = ['🙂','😎','😇','🤔','🤗','😋','🤓','😺','😸'];
+    @endphp
+
+    @foreach($moods as $mood)
+        @php
+            $key = strtolower(str_replace(' ', '-', $mood->mood_name));
+            $emoji = $emojiMap[$key] ?? $defaultEmojis[crc32($key) % count($defaultEmojis)];
+        @endphp
+
+        <a href="{{ route('mood.show', $key, false) }}" 
+           class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md transform transition duration-300 hover:scale-105 hover:shadow-xl">
+            <p class="text-2xl sm:text-3xl md:text-4xl mb-2">{{ $emoji }}</p>
+            <span class="font-semibold text-xs sm:text-sm md:text-base">{{ $mood->mood_name }}</span>
+        </a>
+    @endforeach
+</div>
 
   <!-- Statistik Card -->
       <div class="stat-card bg-gradient-to-br from-gray-100 to-gray-200 px-6 sm:px-8 py-4 sm:py-5 rounded-xl shadow-md mt-6 sm:mt-8 text-center mx-4 sm:mx-0 w-full max-w-md animate-fadeIn" style="animation-delay: 0.4s;">
@@ -203,139 +203,222 @@
       <span class="text-xs sm:text-sm">Tenant</span>
     </span>
       <span class="text-green-600">
-        <span class="block text-lg sm:text-xl md:text-2xl font-bold">4.8</span>
-        <span class="text-xs sm:text-sm">Rating</span>
-      </span>
+        <span class="text-green-600">
+  <span class="block text-lg sm:text-xl md:text-2xl font-bold">
+    {{ $stats['avg_rating'] }}
+  </span>
+  <span class="text-xs sm:text-sm">Rating</span>
+</span>
         </div>
       </div>
     </div>
   </div>
+
+ @auth
+  @if(auth()->user()->role === 'customer')
+
+  <!--- Form Rating (CUSTOMER ONLY) --->
+  <div class="flex justify-center items-center mt-6">
+    <div class="bg-white px-6 py-4 rounded-xl shadow-md text-center w-full max-w-sm">
+      <p class="font-semibold text-gray-700 mb-3">⭐ Beri Rating Aplikasi</p>
+
+      <form id="ratingForm" class="flex justify-center items-center gap-3">
+        <select name="rating" class="border rounded-lg px-3 py-2 text-sm">
+          <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+          <option value="4">⭐⭐⭐⭐ (4)</option>
+          <option value="3">⭐⭐⭐ (3)</option>
+          <option value="2">⭐⭐ (2)</option>
+          <option value="1">⭐ (1)</option>
+        </select>
+
+        <button
+          type="submit"
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition">
+          Kirim
+        </button>
+      </form>
+
+      <p class="text-xs text-gray-500 mt-2">
+        Rating kamu akan mempengaruhi rating sistem
+      </p>
+    </div>
+  </div>
+
+  @endif
+@endauth
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('ratingForm');
+
+  if (!form) return;
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const rating = form.querySelector('[name="rating"]').value;
+
+    fetch('/rating', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ rating })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Gagal kirim rating');
+      return res.json();
+    })
+    .then(() => {
+      alert('Terima kasih atas ratingnya ⭐');
+      location.reload();
+    })
+    .catch(err => {
+      alert('Kamu harus login untuk memberi rating');
+      console.error(err);
+    });
+  });
+});
+</script>
 
   <!-- Search & Popular Menus (Customer-focused) -->
-  <div class="max-w-3xl w-full mx-auto px-4 mt-6">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="text-lg font-semibold">Temukan Makanan</h3>
-      <a href="{{ route('mood.show', 'excited', false) }}" class="text-sm text-blue-600">Lihat semua</a>
-    </div>
-    <div class="mb-4">
-      <input id="home-search" type="search" placeholder="Cari menu atau tenant..." class="w-full border rounded px-3 py-2" />
-    </div>
-    <div id="popular-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      @foreach($menus->take(6) as $menu)
-        <div class="bg-white rounded-lg shadow p-4 flex items-center space-x-4">
-          <img src="{{ $menu->image ?? asset('img/placeholder.png') }}" class="w-20 h-20 object-cover rounded" />
-          <div class="flex-1">
-            <h4 class="font-semibold">{{ $menu->menu_name }}</h4>
-            <p class="text-sm text-gray-500">{{ $menu->tenant->tenant_name ?? '' }}</p>
-            <p class="text-sm text-gray-700 mt-1">Rp {{ number_format($menu->price ?? 0, 0, ',', '.') }}</p>
+  @auth
+  @if(auth()->user()->role === 'customer')
+    <!-- Search & Popular Menus (Customer-focused) -->
+    <div class="max-w-3xl w-full mx-auto px-4 mt-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold">Temukan Makanan</h3>
+        <a href="{{ route('mood.explore') }}" class="text-sm text-blue-600">
+  Lihat semua
+</a>
+      </div>
+      <div class="mb-4">
+        <input id="home-search" type="search" placeholder="Cari menu atau tenant..." class="w-full border rounded px-3 py-2" />
+      </div>
+      <div id="popular-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        @foreach($menus->take(6) as $menu)
+          <div class="bg-white rounded-lg shadow p-4 flex items-center space-x-4">
+            <img src="{{ $menu->image ?? asset('img/placeholder.png') }}" class="w-20 h-20 object-cover rounded" />
+            <div class="flex-1">
+              <h4 class="font-semibold">{{ $menu->menu_name }}</h4>
+              <p class="text-sm text-gray-500">{{ $menu->tenant->tenant_name ?? '' }}</p>
+              <p class="text-sm text-gray-700 mt-1">Rp {{ number_format($menu->price ?? 0, 0, ',', '.') }}</p>
+            </div>
+            <div>
+              <button onclick="openMood('{{ Str::slug($menu->category->mood->mood_name ?? 'biasa-aja') }}', {{ $menu->category->mood_id ?? 0 }}, '{{ addslashes($menu->category->mood->mood_name ?? 'Mood') }}')" class="px-3 py-2 bg-lime-500 text-white rounded">Rekomendasi</button>
+            </div>
           </div>
-          <div>
-            <button onclick="openMood('{{ Str::slug($menu->category->mood->mood_name ?? 'biasa-aja') }}', {{ $menu->category->mood_id ?? 0 }}, '{{ addslashes($menu->category->mood->mood_name ?? 'Mood') }}')" class="px-3 py-2 bg-lime-500 text-white rounded">Rekomendasi</button>
-          </div>
-        </div>
-      @endforeach
+        @endforeach
+      </div>
     </div>
-  </div>
+  @endif
+@endauth
 
   <!-- Page 2: Dashboard Overview (Admin/Tenant Only) -->
-  <div id="page-2" class="page-section" style="padding-top: 80px; display: none;">
-    <div class="max-w-7xl mx-auto py-6">
-      <h2 class="text-3xl font-bold text-gray-900 mb-6">Dashboard Overview</h2>
-      
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-          <div class="p-5">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Total Menu</dt>
-                  <dd class="text-lg font-medium text-gray-900">{{ $stats['total_menus'] ?? 0 }}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
+<div id="page-2" class="page-section" style="padding-top: 80px; display: none;">
+  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl font-bold text-gray-900 mb-8">Dashboard Overview</h2>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Menu -->
+      <div class="bg-white shadow-lg rounded-lg p-5 flex items-center space-x-4">
+        <div class="flex-shrink-0 text-blue-500">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
         </div>
-
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-          <div class="p-5">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-              </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Total Kategori</dt>
-                  <dd class="text-lg font-medium text-gray-900">{{ $stats['total_categories'] ?? 0 }}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-          <div class="p-5">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Total Mood</dt>
-                  <dd class="text-lg font-medium text-gray-900">{{ $stats['total_moods'] ?? 0 }}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-          <div class="p-5">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Total Tenant</dt>
-                  <dd class="text-lg font-medium text-gray-900">{{ $stats['total_tenants'] ?? 0 }}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
+        <div>
+          <p class="text-sm text-gray-500">Total Menu</p>
+          <p class="text-2xl font-semibold text-gray-900">{{ $stats['total_menus'] ?? 0 }}</p>
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="bg-white shadow rounded-lg p-6">
-        @foreach($moods as $mood)
-          <button onclick="openMood('{{ Str::slug($mood->mood_name) }}', {{ $mood->id }}, '{{ addslashes($mood->mood_name) }}')" class="mood-card flex flex-col items-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl px-4 sm:px-6 py-4 sm:py-5 shadow-md hover:shadow-xl">
-            <p class="text-2xl sm:text-3xl md:text-4xl mb-2">{{ match(strtolower($mood->mood_name)) {
-                'senang' => '😊',
-                'sedih' => '😔',
-                'stress' => '😫',
-                'lelah' => '😴',
-                'biasa-aja' => '😐',
-                'excited' => '🤩',
-                default => '🙂'
-            } }}</p>
-            <span class="font-semibold text-xs sm:text-sm md:text-base">{{ $mood->mood_name }}</span>
-          </button>
-        @endforeach
-            <span class="text-gray-700 font-medium">Lihat Statistik</span>
+      <!-- Total Kategori -->
+      <div class="bg-white shadow-lg rounded-lg p-5 flex items-center space-x-4">
+        <div class="flex-shrink-0 text-green-500">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Total Kategori</p>
+          <p class="text-2xl font-semibold text-gray-900">{{ $stats['total_categories'] ?? 0 }}</p>
+        </div>
+      </div>
 
-      <!-- Recommendation Modal -->
+      <!-- Total Mood -->
+      <div class="bg-white shadow-lg rounded-lg p-5 flex items-center space-x-4">
+        <div class="flex-shrink-0 text-purple-500">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Total Mood</p>
+          <p class="text-2xl font-semibold text-gray-900">{{ $stats['total_moods'] ?? 0 }}</p>
+        </div>
+      </div>
+
+      <!-- Total Tenant -->
+      <div class="bg-white shadow-lg rounded-lg p-5 flex items-center space-x-4">
+        <div class="flex-shrink-0 text-red-500">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500">Total Tenant</p>
+          <p class="text-2xl font-semibold text-gray-900">{{ $stats['total_tenants'] ?? 0 }}</p>
+        </div>
+      </div>
+    </div>
+  
+<!-- Quick Actions -->
+      <div class="bg-white rounded-xl shadow p-6 mb-10">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">
+            Quick Actions
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+
+            <a href="{{ route('dashboard.menus') }}"
+               class="p-5 rounded-xl border hover:bg-blue-50 transition">
+                <p class="text-lg font-semibold text-gray-800">
+                    ➕ Tambah Menu
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    Kelola menu tenant
+                </p>
+            </a>
+
+            <a href="{{ route('dashboard.categories') }}"
+               class="p-5 rounded-xl border hover:bg-green-50 transition">
+                <p class="text-lg font-semibold text-gray-800">
+                    🏷️ Tambah Kategori
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    Kategori berdasarkan mood
+                </p>
+            </a>
+
+            <a href="{{ route('statistics.index') }}"
+               class="p-5 rounded-xl border hover:bg-purple-50 transition">
+                <p class="text-lg font-semibold text-gray-800">
+                    📊 Statistik
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    Lihat performa sistem
+                </p>
+            </a>
+
+        </div>
+    </div>
+</div>
+
+<!-- Recommendation Modal -->
       <div id="recommendation-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-60 z-50 flex items-center justify-center px-4 py-6">
         <div class="bg-white rounded-lg w-full max-w-3xl shadow-lg overflow-hidden">
           <div class="p-4 border-b flex justify-between items-center">
@@ -352,6 +435,81 @@
       </div>
     </div>
   </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    @foreach($moods as $mood)
+    const ctx{{ $mood->id }} = document.getElementById('chart-mood-{{ $mood->id }}').getContext('2d');
+    const data{{ $mood->id }} = @json(array_values($stats['mood_history'][$mood->id] ?? []));
+    const labels{{ $mood->id }} = @json(array_keys($stats['mood_history'][$mood->id] ?? []));
+
+    new Chart(ctx{{ $mood->id }}, {
+        type: 'line',
+        data: {
+            labels: labels{{ $mood->id }},
+            datasets: [{
+                label: '{{ $mood->mood_name }}',
+                data: data{{ $mood->id }},
+                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: '#e5e7eb' } }
+            }
+        }
+    });
+    @endforeach
+});
+
+// Modal Recommendation
+function openMood(slug, moodId, moodName) {
+    document.getElementById('recommendation-title').innerText = "Rekomendasi untuk " + moodName;
+    const list = document.getElementById('recommendation-list');
+    list.innerHTML = "<p class='col-span-full text-gray-500'>Loading...</p>";
+    document.getElementById('recommendation-modal').classList.remove('hidden');
+
+    fetch(`/api/recommendation/mood/${moodId}`)
+        .then(res => res.json())
+        .then(data => {
+            list.innerHTML = '';
+            if(data.length === 0) {
+                list.innerHTML = "<p class='col-span-full text-gray-500'>Tidak ada menu.</p>";
+            } else {
+                data.forEach(item => {
+                    list.innerHTML += `
+                        <div class="bg-gray-100 p-4 rounded-lg shadow hover:shadow-md flex flex-col h-full">
+                            ${item.image ? `<img src="${item.image}" alt="${item.menu_name}" class="h-32 w-full object-cover rounded mb-3">` : ''}
+                            <h4 class="font-semibold text-gray-900 mb-1 truncate">${item.menu_name}</h4>
+                            <p class="text-sm text-gray-600 mb-2 line-clamp-3">${item.description ?? ''}</p>
+                            <button class="mt-auto bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition">Lihat Detail</button>
+                        </div>
+                    `;
+                });
+            }
+        })
+        .catch(err => {
+            list.innerHTML = "<p class='col-span-full text-red-500'>Gagal load data.</p>";
+            console.error(err);
+        });
+}
+
+function closeRecommendation() {
+    document.getElementById('recommendation-modal').classList.add('hidden');
+}
+</script>
+
 
   <!-- Page 3: Dashboard Menus (Admin/Tenant Only) -->
   <div id="page-3" class="page-section" style="padding-top: 80px; display: none;">
@@ -538,8 +696,194 @@
     </div>
   </div>
 
-  <!-- Page 6: Statistics (Admin/Tenant Only) -->
-  <div id="page-6" class="page-section" style="padding-top: 80px; display: none;">
+@php
+    $user = auth()->user();
+@endphp
+
+@if($user && $user->role !== 'admin')
+<div id="page-6" class="page-section" style="padding-top: 80px;">
+    <div class="max-w-7xl mx-auto py-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-3xl font-bold text-gray-900">Pengelolaan Tenant untuk Event</h2>
+            <button onclick="openTenantModal()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                + Tambah Tenant ke Event
+            </button>
+        </div>
+
+        <div id="tenant-success" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"></div>
+
+        <div class="mb-4">
+            <input type="text" id="tenant-search" placeholder="Cari tenant..." 
+                class="w-full sm:w-1/3 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <!-- Tenant / Event Table -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="tenant-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Tenant</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Mulai</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Berakhir</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse($tenants as $tenant)
+                            @forelse($tenant->events as $event)
+                                <tr data-id="{{ $tenant->id }}">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">{{ $tenant->tenant_name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $tenant->location }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $event->event_name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $event->pivot->start_date ? \Carbon\Carbon::parse($event->pivot->start_date)->format('d-m-Y') : '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $event->pivot->end_date ? \Carbon\Carbon::parse($event->pivot->end_date)->format('d-m-Y') : '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        @if($event->pivot->active)
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">Aktif</span>
+                                        @else
+                                            <span class="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-semibold">Tidak Aktif</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="editTenantEvent({{ $tenant->id }}, {{ $event->id }})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                                        <button onclick="deleteTenantEvent({{ $tenant->id }}, {{ $event->id }})" class="text-red-600 hover:text-red-900">Hapus</button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">Tenant ini belum mendaftar di event manapun</td>
+                                </tr>
+                            @endforelse
+                        @empty
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">Tidak ada tenant sama sekali</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Tenant ke Event -->
+<div id="tenant-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-11/12 sm:w-2/3 md:w-1/2 p-6 relative">
+        <h3 class="text-xl font-bold mb-4">Tambah Tenant ke Event</h3>
+        <button onclick="closeTenantModal()" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900">&times;</button>
+
+        <form id="tenant-event-form">
+            <div class="mb-4">
+                <label class="block mb-2 font-medium">Pilih Tenant</label>
+                <select id="tenant_id" class="w-full border rounded px-3 py-2">
+                    @foreach($tenants as $tenant)
+                        <option value="{{ $tenant->id }}">{{ $tenant->tenant_name }} - {{ $tenant->location }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-2 font-medium">Pilih Event</label>
+                <select id="event_id" class="w-full border rounded px-3 py-2">
+                    @foreach($events as $event)
+                        <option value="{{ $event->id }}">{{ $event->event_name }} - {{ $event->start_date ? \Carbon\Carbon::parse($event->start_date)->format('d-m-Y') : '-' }} s/d {{ $event->end_date ? \Carbon\Carbon::parse($event->end_date)->format('d-m-Y') : '-' }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-2 font-medium">Tanggal Mulai</label>
+                <input type="date" id="pivot_start_date" class="w-full border rounded px-3 py-2" value="{{ date('Y-m-d') }}">
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-2 font-medium">Tanggal Berakhir</label>
+                <input type="date" id="pivot_end_date" class="w-full border rounded px-3 py-2" value="{{ date('Y-m-d') }}">
+            </div>
+
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="pivot_active" checked class="form-checkbox">
+                    <span class="ml-2">Aktif</span>
+                </label>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="button" onclick="submitTenantEvent()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openTenantModal() {
+    document.getElementById('tenant-modal').classList.remove('hidden');
+}
+function closeTenantModal() {
+    document.getElementById('tenant-modal').classList.add('hidden');
+}
+
+// AJAX submit function
+function submitTenantEvent() {
+    const tenantId = document.getElementById('tenant_id').value;
+    const eventId = document.getElementById('event_id').value;
+    const startDate = document.getElementById('pivot_start_date').value;
+    const endDate = document.getElementById('pivot_end_date').value;
+    const active = document.getElementById('pivot_active').checked;
+
+    fetch("{{ route('tenant.event.store') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+        },
+        body: JSON.stringify({
+            tenant_id: tenantId,
+            event_id: eventId,
+            start_date: startDate,
+            end_date: endDate,
+            active: active
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            const tbody = document.querySelector("#tenant-table tbody");
+            const newRow = document.createElement("tr");
+            newRow.setAttribute("data-id", data.tenant.id);
+            newRow.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${data.tenant.tenant_name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.tenant.location}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${data.tenant.event_name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.tenant.start_date}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.tenant.end_date}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    ${data.tenant.active ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">Aktif</span>' : '<span class="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-semibold">Tidak Aktif</span>'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="editTenantEvent(${data.tenant.id}, ${data.tenant.event_id})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                    <button onclick="deleteTenantEvent(${data.tenant.id}, ${data.tenant.event_id})" class="text-red-600 hover:text-red-900">Hapus</button>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+
+            document.getElementById('tenant-success').textContent = "Tenant berhasil ditambahkan ke event!";
+            document.getElementById('tenant-success').classList.remove('hidden');
+
+            closeTenantModal();
+        }
+    })
+    .catch(err => console.error(err));
+}
+</script>
+@endif
+
+  <!-- Page 7: Statistics (Admin/Tenant Only) -->
+  <div id="page-7" class="page-section" style="padding-top: 80px; display: none;">
     <div class="max-w-7xl mx-auto py-6">
       <h1 class="text-4xl font-bold text-gray-800 mb-2">Statistik MoodFood</h1>
       <p class="text-gray-600 mb-6">Laporan statistik interaksi pengguna</p>
@@ -624,41 +968,89 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-center space-x-8 sm:space-x-12 text-center">
-      <div class="bottom-nav-item active" onclick="showPage(1)">
-        <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">🏠</span>
-        <span class="text-xs sm:text-sm text-gray-600 font-medium">Home</span>
-      </div>
-      @auth
-        @if(in_array(auth()->user()->role, ['admin', 'tenant']))
-          <div class="bottom-nav-item" onclick="showPage(2)">
-            <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">📊</span>
-            <span class="text-xs sm:text-sm text-gray-600 font-medium">Dashboard</span>
-          </div>
-          <div class="bottom-nav-item" onclick="showPage(3)">
-            <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">🍽️</span>
-            <span class="text-xs sm:text-sm text-gray-600 font-medium">Menu</span>
-          </div>
-          <div class="bottom-nav-item" onclick="showPage(4)">
-            <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">📁</span>
-            <span class="text-xs sm:text-sm text-gray-600 font-medium">Kategori</span>
-          </div>
-          <div class="bottom-nav-item" onclick="showPage(5)">
-            <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">😊</span>
-            <span class="text-xs sm:text-sm text-gray-600 font-medium">Mood</span>
-          </div>
-          <div class="bottom-nav-item" onclick="showPage(6)">
-            <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">📈</span>
-            <span class="text-xs sm:text-sm text-gray-600 font-medium">Statistik</span>
-          </div>
-        @endif
-      @endauth
+ <!-- Bottom Navigation -->
+<div id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 transition-transform duration-150 ease-out">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex justify-center space-x-8 sm:space-x-12 text-center">
+    <div class="bottom-nav-item active" onclick="showPage(1)">
+      <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">🏠</span>
+      <span class="text-xs sm:text-sm text-gray-600 font-medium">Home</span>
     </div>
-  </div>
+    @auth
+  @if(in_array(auth()->user()->role, ['admin', 'tenant']))
+    <div class="bottom-nav-item" onclick="showPage(2)">
+      <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">📊</span>
+      <span class="text-xs sm:text-sm text-gray-600 font-medium">Dashboard</span>
+    </div>
+    <div class="bottom-nav-item" onclick="showPage(3)">
+      <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">🍽️</span>
+      <span class="text-xs sm:text-sm text-gray-600 font-medium">Menu</span>
+    </div>
+    <div class="bottom-nav-item" onclick="showPage(4)">
+      <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">📁</span>
+      <span class="text-xs sm:text-sm text-gray-600 font-medium">Kategori</span>
+    </div>
+    <div class="bottom-nav-item" onclick="showPage(5)">
+      <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">😊</span>
+      <span class="text-xs sm:text-sm text-gray-600 font-medium">Mood</span>
+    </div>
 
-  
+    <!-- Tenant Button: hanya untuk tenant, bukan admin -->
+    @if(auth()->user()->role === 'tenant')
+      <div class="bottom-nav-item" onclick="showPage(6)">
+        <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">🏢</span>
+        <span class="text-xs sm:text-sm text-gray-600 font-medium">Tenant</span>
+      </div>
+    @endif
+
+    <div class="bottom-nav-item" onclick="showPage(7)">
+      <span class="nav-icon text-xl sm:text-2xl mb-1 w-8 h-8 sm:w-9 sm:h-9">📈</span>
+      <span class="text-xs sm:text-sm text-gray-600 font-medium">Statistik</span>
+    </div>
+  @endif
+@endauth
+  </div>
+</div>
+
+<script>
+  const bottomNav = document.getElementById('bottom-nav');
+  let lastScroll = window.scrollY;
+  let ticking = false;
+
+  function updateNav(scrollPos) {
+    if (scrollPos > lastScroll && scrollPos > 50) {
+      // scroll ke bawah -> sembunyikan
+      bottomNav.style.transform = 'translateY(100%)';
+    } else {
+      // scroll ke atas -> tampilkan
+      bottomNav.style.transform = 'translateY(0)';
+    }
+    lastScroll = scrollPos;
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => updateNav(window.scrollY));
+      ticking = true;
+    }
+  });
+
+  // Hover / fokus -> selalu muncul
+  bottomNav.addEventListener('mouseenter', () => bottomNav.style.transform = 'translateY(0)');
+  bottomNav.addEventListener('mouseleave', () => {
+    if (window.scrollY > 50) bottomNav.style.transform = 'translateY(100%)';
+  });
+
+  // Untuk kontainer scroll di halaman Mood atau Statistik
+  document.querySelectorAll('.page-section').forEach(page => {
+    page.addEventListener('scroll', (e) => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => updateNav(e.target.scrollTop));
+        ticking = true;
+      }
+    });
+  });
+</script>
 
   <!-- Menu Modal -->
   <div id="menu-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -1015,114 +1407,108 @@
     }
 
     async function loadEventStats() {
-      const eventId = document.getElementById('event-select').value;
-      const url = eventId 
-        ? `/statistics/per-event?event_id=${eventId}`
-        : '/statistics/per-event';
-      
-      try {
-        const response = await fetch(url, {
-          headers: {
-            'Accept': 'application/json'
-          }
+  const eventId = document.getElementById('event-select').value;
+  const url = eventId 
+    ? `/statistics/per-event?event_id=${eventId}`
+    : '/statistics/per-event';
+
+  console.log('Fetching URL:', url); // debug
+
+  try {
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    // Debug: cek status dan raw response
+    console.log('Status:', response.status);
+    const text = await response.text();
+    console.log('Raw response:', text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error('JSON parse error:', err);
+      alert('Gagal membaca data JSON dari server.');
+      return;
+    }
+
+    displayEventStats(data, eventId);
+  } catch (error) {
+    console.error('Fetch error:', error);
+    alert('Terjadi kesalahan saat mengambil data.');
+  }
+}
+
+function displayEventStats(data, eventId) {
+  const content = document.getElementById('event-stats-content');
+  document.getElementById('per-event-results').classList.remove('hidden');
+
+  try {
+    if (eventId) {
+      // single event
+      const byMood = data.by_mood || [];
+      const byMenu = data.by_menu || [];
+
+      content.innerHTML = `
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-2">${data.event?.event_name || 'Unknown Event'}</h3>
+          <p class="text-gray-600 mb-4">${data.event?.description || ''}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-blue-50 rounded-lg p-4">
+            <p class="text-sm text-gray-600">Total Interaksi</p>
+            <p class="text-2xl font-bold text-blue-600">${data.total_interactions || 0}</p>
+          </div>
+          <div class="bg-green-50 rounded-lg p-4">
+            <p class="text-sm text-gray-600">Pengguna Unik</p>
+            <p class="text-2xl font-bold text-green-600">${data.unique_users || 0}</p>
+          </div>
+          <div class="bg-purple-50 rounded-lg p-4">
+            <p class="text-sm text-gray-600">Mood Terpopuler</p>
+            <p class="text-2xl font-bold text-purple-600">${byMood[0]?.mood_name || 'N/A'}</p>
+          </div>
+        </div>
+      `;
+
+      // Chart
+      setTimeout(() => {
+        new Chart(document.getElementById('chart-event-mood'), {
+          type: 'bar',
+          data: {
+            labels: byMood.map(m => m.mood_name),
+            datasets: [{ label: 'Interaksi', data: byMood.map(m => m.total), backgroundColor: '#3B82F6' }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
-        const data = await response.json();
-        displayEventStats(data, eventId);
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat mengambil data');
-      }
-    }
+      }, 100);
 
-    function displayEventStats(data, eventId) {
-      document.getElementById('per-event-results').classList.remove('hidden');
-      const content = document.getElementById('event-stats-content');
-
-      if (eventId) {
-        content.innerHTML = `
-          <div class="mb-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-2">${data.event.event_name}</h3>
-            <p class="text-gray-600 mb-4">${data.event.description || ''}</p>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-blue-50 rounded-lg p-4">
-              <p class="text-sm text-gray-600">Total Interaksi</p>
-              <p class="text-2xl font-bold text-blue-600">${data.total_interactions}</p>
-            </div>
-            <div class="bg-green-50 rounded-lg p-4">
-              <p class="text-sm text-gray-600">Pengguna Unik</p>
-              <p class="text-2xl font-bold text-green-600">${data.unique_users}</p>
-            </div>
-            <div class="bg-purple-50 rounded-lg p-4">
-              <p class="text-sm text-gray-600">Mood Terpopuler</p>
-              <p class="text-2xl font-bold text-purple-600">${data.by_mood.length > 0 ? data.by_mood[0].mood_name : 'N/A'}</p>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg p-6">
-              <h4 class="font-semibold text-gray-800 mb-4">Statistik Mood</h4>
-              <canvas id="chart-event-mood"></canvas>
-            </div>
-            <div class="bg-white rounded-lg p-6">
-              <h4 class="font-semibold text-gray-800 mb-4">Top 10 Menu</h4>
-              <div class="space-y-2">
-                ${data.by_menu.map((menu, idx) => `
-                  <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span class="text-gray-700">${idx + 1}. ${menu.menu_name}</span>
-                    <span class="font-semibold text-blue-600">${menu.total}</span>
-                  </div>
-                `).join('')}
+    } else {
+      // all events
+      content.innerHTML = `
+        <div class="space-y-4">
+          ${(data.events || []).map(event => `
+            <div class="card bg-white rounded-lg p-6 border border-gray-200">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h3 class="text-xl font-bold text-gray-800">${event.event?.event_name || 'Unknown Event'}</h3>
+                </div>
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">
+                  ${event.total_interactions || 0} interaksi
+                </span>
               </div>
             </div>
-          </div>
-        `;
-
-        setTimeout(() => {
-          new Chart(document.getElementById('chart-event-mood'), {
-            type: 'bar',
-            data: {
-              labels: data.by_mood.map(m => m.mood_name),
-              datasets: [{
-                label: 'Interaksi',
-                data: data.by_mood.map(m => m.total),
-                backgroundColor: '#3B82F6'
-              }]
-            },
-            options: {
-              responsive: true,
-              scales: {
-                y: { beginAtZero: true }
-              }
-            }
-          });
-        }, 100);
-      } else {
-        content.innerHTML = `
-          <div class="space-y-4">
-            ${data.events.map(event => `
-              <div class="card bg-white rounded-lg p-6 border border-gray-200">
-                <div class="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 class="text-xl font-bold text-gray-800">${event.event.event_name}</h3>
-                  </div>
-                  <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">
-                    ${event.total_interactions} interaksi
-                  </span>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  ${event.by_mood.map(mood => `
-                    <div class="text-center">
-                      <p class="text-sm text-gray-600">${mood.mood_name}</p>
-                      <p class="text-lg font-bold text-gray-800">${mood.total}</p>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
+          `).join('')}
+        </div>
+      `;
     }
+
+  } catch (err) {
+    console.error('Render error:', err);
+    content.innerHTML = '<p class="text-red-500">Gagal menampilkan data statistik event.</p>';
+  }
+}
+
 
     // Close modals when clicking outside
     window.onclick = function(event) {

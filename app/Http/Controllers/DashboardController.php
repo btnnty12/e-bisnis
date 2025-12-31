@@ -6,199 +6,64 @@ use App\Models\Menu;
 use App\Models\Category;
 use App\Models\Mood;
 use App\Models\Tenant;
+use App\Models\Event; // pastikan import model Event
+use App\Models\Rating;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     /**
-     * Dashboard utama
+     * DASHBOARD OVERVIEW
      */
     public function index()
     {
         $stats = [
-            'total_menus' => Menu::count(),
+            'total_menus'      => Menu::count(),
             'total_categories' => Category::count(),
-            'total_moods' => Mood::count(),
-            'total_tenants' => Tenant::count(),
+            'total_moods'      => Mood::count(),
+            'total_tenants'    => Tenant::count(),
+            'avg_rating'       => round(Rating::avg('rating'), 1) ?? 0,
+            'total_ratings'    => Rating::count(),
         ];
 
-        return view('dashboard.index', compact('stats'));
-    }
+        // Statistik Mood
+        $moods = Mood::orderBy('mood_name')->get();
+        $moodCounts = [];
+        foreach ($moods as $mood) {
+            $moodCounts[$mood->id] = $mood->total_clicks ?? 0;
+        }
+        $stats['mood_counts'] = $moodCounts;
 
-    /**
-     * Halaman pengelolaan menu
-     */
-    public function menus()
-    {
-        $menus = Menu::with(['tenant', 'category.mood'])->orderBy('created_at', 'desc')->get();
-        $tenants = Tenant::all();
-        $categories = Category::with('mood')->get();
-        
-        return view('dashboard.menus', compact('menus', 'tenants', 'categories'));
-    }
+        // Statistik per event (tenant aktif hari ini)
+        $activeTenants = Tenant::active()->with('menus', 'menus.category', 'events')->get();
+        $eventStats = [];
+        foreach ($activeTenants as $tenant) {
+            $totalMenus = $tenant->menus->count();
+            $avgRating  = $tenant->menus->flatMap->ratings->avg('rating') ?? 0;
 
-    /**
-     * Simpan menu baru
-     */
-    public function storeMenu(Request $request)
-    {
-        $data = $request->validate([
-            'menu_name' => 'required|string|max:100',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'tenant_id' => 'required|exists:tenants,id',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
-        ]);
-        
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('menu', 'public');
-            $data['image'] = 'storage/'.$path;
+            $eventStats[] = [
+                'tenant_name' => $tenant->tenant_name,
+                'total_menus' => $totalMenus,
+                'avg_rating'  => round($avgRating, 1),
+                'start_date'  => optional($tenant->start_date)->format('d-m-Y'),
+                'end_date'    => optional($tenant->end_date)->format('d-m-Y'),
+            ];
         }
 
-        Menu::create($data);
-
-        return redirect()->route('dashboard.menus')->with('success', 'Menu berhasil ditambahkan!');
+        return view('dashboard.index', compact('stats', 'moods', 'eventStats'));
     }
 
     /**
-     * Update menu
+     * TENANT MANAGEMENT
      */
-    public function updateMenu(Request $request, $id)
+    public function tenants()
     {
-        $menu = Menu::findOrFail($id);
+        // Ambil semua tenant beserta event yang terhubung
+        $tenants = Tenant::with('events')->orderBy('tenant_name')->get();
 
-        $data = $request->validate([
-            'menu_name' => 'required|string|max:100',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'tenant_id' => 'required|exists:tenants,id',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
-        ]);
-        
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('menu', 'public');
-            $data['image'] = 'storage/'.$path;
-        }
+        // Ambil semua event untuk modal dropdown
+        $events = Event::orderBy('event_name')->get();
 
-        $menu->update($data);
-
-        return redirect()->route('dashboard.menus')->with('success', 'Menu berhasil diperbarui!');
-    }
-
-    /**
-     * Hapus menu
-     */
-    public function deleteMenu($id)
-    {
-        Menu::destroy($id);
-
-        return redirect()->route('dashboard.menus')->with('success', 'Menu berhasil dihapus!');
-    }
-
-    /**
-     * Halaman pengelolaan kategori mood
-     */
-    public function categories()
-    {
-        $categories = Category::with('mood')->orderBy('mood_id')->get();
-        $moods = Mood::all();
-        
-        return view('dashboard.categories', compact('categories', 'moods'));
-    }
-
-    /**
-     * Simpan kategori baru
-     */
-    public function storeCategory(Request $request)
-    {
-        $data = $request->validate([
-            'category_name' => 'required|string|max:100',
-            'mood_id' => 'required|exists:moods,id',
-        ]);
-
-        Category::create($data);
-
-        return redirect()->route('dashboard.categories')->with('success', 'Kategori berhasil ditambahkan!');
-    }
-
-    /**
-     * Update kategori
-     */
-    public function updateCategory(Request $request, $id)
-    {
-        $category = Category::findOrFail($id);
-
-        $data = $request->validate([
-            'category_name' => 'required|string|max:100',
-            'mood_id' => 'required|exists:moods,id',
-        ]);
-
-        $category->update($data);
-
-        return redirect()->route('dashboard.categories')->with('success', 'Kategori berhasil diperbarui!');
-    }
-
-    /**
-     * Hapus kategori
-     */
-    public function deleteCategory($id)
-    {
-        Category::destroy($id);
-
-        return redirect()->route('dashboard.categories')->with('success', 'Kategori berhasil dihapus!');
-    }
-
-    /**
-     * Halaman pengelolaan mood
-     */
-    public function moods()
-    {
-        $moods = Mood::withCount('categories')->orderBy('id')->get();
-        
-        return view('dashboard.moods', compact('moods'));
-    }
-
-    /**
-     * Simpan mood baru
-     */
-    public function storeMood(Request $request)
-    {
-        $data = $request->validate([
-            'mood_name' => 'required|string|max:100',
-            'description' => 'nullable|string',
-        ]);
-
-        Mood::create($data);
-
-        return redirect()->route('dashboard.moods')->with('success', 'Mood berhasil ditambahkan!');
-    }
-
-    /**
-     * Update mood
-     */
-    public function updateMood(Request $request, $id)
-    {
-        $mood = Mood::findOrFail($id);
-
-        $data = $request->validate([
-            'mood_name' => 'required|string|max:100',
-            'description' => 'nullable|string',
-        ]);
-
-        $mood->update($data);
-
-        return redirect()->route('dashboard.moods')->with('success', 'Mood berhasil diperbarui!');
-    }
-
-    /**
-     * Hapus mood
-     */
-    public function deleteMood($id)
-    {
-        Mood::destroy($id);
-
-        return redirect()->route('dashboard.moods')->with('success', 'Mood berhasil dihapus!');
+        return view('dashboard.tenants', compact('tenants', 'events'));
     }
 }

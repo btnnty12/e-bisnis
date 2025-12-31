@@ -13,22 +13,30 @@ class InteractionController extends Controller
         return Interaction::with(['user', 'mood', 'menu'])->get();
     }
 
+    // =====================
+    // INTERACTION (USER LOGIN)
+    // =====================
     public function store(Request $request)
     {
         $data = $request->validate([
-            'mood_id' => 'required|exists:moods,id',
-            'menu_id' => 'required|exists:menus,id',
+            'mood_id'  => 'required|exists:moods,id',
+            'menu_id'  => 'required|exists:menus,id',
             'event_id' => 'nullable|exists:events,id',
         ]);
 
         return Interaction::create([
-            'user_id' => Auth::id(),
-            'mood_id' => $data['mood_id'],
-            'menu_id' => $data['menu_id'],
-            'event_id' => $data['event_id'] ?? null,
-            'session_id' => Auth::check() ? null : session()->getId(),
+            'user_id'    => Auth::id(),
+            'mood_id'    => $data['mood_id'],
+            'menu_id'    => $data['menu_id'],
+            'event_id'   => $data['event_id'] ?? null,
+            'type'       => 'mood_click', // 🔥 PENTING
+            'session_id' => null,
         ]);
     }
+
+    // =====================
+    // INTERACTION (PUBLIC / GUEST)
+    // =====================
     public function storePublic(Request $request)
     {
         $request->validate([
@@ -37,11 +45,13 @@ class InteractionController extends Controller
         ]);
 
         return Interaction::create([
-            'mood_id' => $request->mood_id,
-            'menu_id' => $request->menu_id,
+            'mood_id'    => $request->mood_id,
+            'menu_id'    => $request->menu_id,
+            'type'       => 'mood_click', // 🔥 PENTING
             'session_id' => session()->getId(),
         ]);
     }
+
     public function show($id)
     {
         return Interaction::with(['user', 'mood', 'menu'])->findOrFail($id);

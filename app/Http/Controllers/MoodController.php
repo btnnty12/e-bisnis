@@ -61,4 +61,45 @@ class MoodController extends Controller
             'message' => 'Mood berhasil dihapus'
         ]);
     }
+
+    // Halaman explore
+    public function explore()
+    {
+        $moods = Mood::with([
+            'categories.menus.tenant'
+        ])->get();
+
+        return view('explore', compact('moods'));
+    }
+
+    // AJAX endpoint untuk reload menu
+    public function ajaxMenus(Request $request, $moodId)
+    {
+        $categoryId = $request->query('category');
+
+        $menus = \App\Models\Menu::with(['tenant', 'category'])
+            ->whereHas('category', function($q) use ($moodId, $categoryId) {
+                $q->where('mood_id', $moodId);
+                if ($categoryId && $categoryId !== 'all') {
+                    $q->where('id', $categoryId);
+                }
+            })
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($menu){
+                return [
+                    'id' => $menu->id,
+                    'menu_name' => $menu->menu_name,
+                    'description' => $menu->description,
+                    'category_id' => $menu->category_id,
+                    'category_name' => $menu->category->category_name ?? '',
+                    'tenant_name' => $menu->tenant->tenant_name ?? '',
+                    'location' => $menu->tenant->location ?? '',
+                    'image' => $menu->image,
+                    'price_formatted' => number_format($menu->price ?? 0,0,',','.'),
+                ];
+            });
+
+        return response()->json($menus);
+    }
 }

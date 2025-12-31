@@ -17,6 +17,8 @@ class EventController extends Controller
         $data = $request->validate([
             'event_name' => 'required|string|max:100',
             'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
         return Event::create($data);
@@ -34,6 +36,8 @@ class EventController extends Controller
         $data = $request->validate([
             'event_name' => 'sometimes|string|max:100',
             'description' => 'nullable|string',
+            'start_date' => 'sometimes|date',
+            'end_date' => 'sometimes|date|after_or_equal:start_date',
         ]);
 
         $event->update($data);

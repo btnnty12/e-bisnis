@@ -12,10 +12,45 @@ class Event extends Model
     protected $fillable = [
         'event_name',
         'description',
+        'start_date',
+        'end_date',
     ];
 
+    /**
+     * =====================
+     * RELATIONS
+     * =====================
+     */
+
+    // Event bisa punya banyak tenant melalui pivot table event_tenant
+    public function tenants()
+    {
+        return $this->belongsToMany(Tenant::class, 'event_tenant')
+                    ->withPivot('active') // status tenant ikut event atau tidak
+                    ->withTimestamps();
+    }
+
+    // Relasi ke interaksi (jika ada)
     public function interactions()
     {
-        return $this->hasMany(Interaction::class, 'event_id');
+        return $this->hasMany(Interaction::class);
+    }
+
+    /**
+     * =====================
+     * SCOPES (OPTIONAL)
+     * =====================
+     */
+
+    // Event yang sedang aktif (dipakai untuk statistik periode event)
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('start_date')
+              ->orWhere('start_date', '<=', now());
+        })->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>=', now());
+        });
     }
 }

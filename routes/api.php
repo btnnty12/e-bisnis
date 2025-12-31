@@ -58,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('recommendations', RecommendationController::class);
 
     // Statistics
-    Route::get('/statistics/before-after', [StatisticsController::class, 'beforeAfter']);
-    Route::get('/statistics/per-event', [StatisticsController::class, 'perEvent']);
+Route::get('/statistics/before-after', [StatisticsController::class, 'beforeAfter']);
+Route::get('/statistics/per-event', [StatisticsController::class, 'perEvent']);
+// Statistik Before & After Mood (user_moods)
+Route::get('/statistics/before-after-mood', [StatisticsController::class, 'beforeAfterMood']);
 });
