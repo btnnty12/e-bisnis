@@ -15,12 +15,12 @@ class DatabaseSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         // Hapus data di tabel-tabel yang ada
-        // DB::table('tenant_event')->truncate(); // sudah tidak ada
         DB::table('menus')->truncate();
         DB::table('tenants')->truncate();
         DB::table('events')->truncate();
         DB::table('users')->truncate();
-        DB::table('page_views')->truncate(); // tambah truncate PageView
+        DB::table('interactions')->truncate();
+        DB::table('page_views')->truncate();
 
         // Hidupkan kembali pengecekan foreign key
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -29,31 +29,25 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MoodSeeder::class,
             CategorySeeder::class,
-
             TenantSeeder::class,
             EventSeeder::class,
-
-            // TenantEventSeeder::class, // sudah tidak ada
-
             MenuSeeder::class,
             UserSeeder::class,
+            InteractionSeeder::class, // pastikan ini ada
             RecommendationSeeder::class,
         ]);
 
         // ================================
-        // Buat DUMMY PAGE VIEWS untuk tiap event
+        // Buat DUMMY PAGE VIEWS per event
         // ================================
         $events = Event::all();
-
         foreach ($events as $event) {
-            // buat random 5-20 interaksi per event
-            $total = rand(5, 20);
-
-            for ($i = 0; $i < $total; $i++) {
+            $totalViews = rand(5, 20); // 5–20 views per event
+            for ($i = 0; $i < $totalViews; $i++) {
                 PageView::create([
                     'event_id'   => $event->id,
-                    'user_id'    => rand(1, 10),           // user dummy (1–10)
-                    'page'       => 'public',              // wajib diisi sesuai kolom
+                    'user_id'    => rand(1, 10),
+                    'page'       => 'public', // wajib sesuai kolom
                     'created_at' => now()->subDays(rand(0, 10)),
                     'updated_at' => now(),
                 ]);

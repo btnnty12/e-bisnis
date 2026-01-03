@@ -107,7 +107,7 @@ Route::post('/rating', [RatingController::class, 'store'])
 Route::get('/statistics/per-event', [StatisticsController::class, 'perEventWeb'])
     ->name('statistics.per-event');
 
-Route::get('/statistics/before-after', [StatisticsController::class, 'beforeAfterWeb'])
+Route::get('/statistics/before-after', [StatisticsController::class, 'beforeAfter'])
     ->name('statistics.before-after');
 
 // =====================

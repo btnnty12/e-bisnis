@@ -1243,6 +1243,36 @@ async function loadBeforeAfterStats() {
   }
 }
 
+function renderMoodTable(byMood) {
+  if (!byMood || byMood.length === 0) {
+    return `<p class="text-sm text-gray-500">Belum ada data mood</p>`;
+  }
+
+  let rows = '';
+  byMood.forEach(mood => {
+    rows += `
+      <tr>
+        <td class="border px-3 py-2">${mood.mood_name}</td>
+        <td class="border px-3 py-2 text-center">${mood.total}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <table class="w-full border mt-4">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border px-3 py-2 text-left">Mood</th>
+          <th class="border px-3 py-2 text-center">Total Interaksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
+
 function renderBeforeAfterStats(data) {
   const wrapper = document.getElementById('before-after-results');
   const beforeBox = document.getElementById('before-stats');
@@ -1266,18 +1296,24 @@ function renderBeforeAfterStats(data) {
   }
 
   beforeBox.innerHTML = `
-    <div class="grid grid-cols-1 gap-3">
-      ${statCard('Total Interaksi', before.total_interactions ?? 0)}
-      ${statCard('User Unik', before.unique_users ?? 0)}
-    </div>
-  `;
+  <div class="grid grid-cols-1 gap-3">
+    ${statCard('Total Interaksi', before.total_interactions ?? 0)}
+    ${statCard('User Unik', before.unique_users ?? 0)}
+  </div>
+
+  <h4 class="mt-4 font-semibold text-gray-700">Statistik per Mood</h4>
+  ${renderMoodTable(before.by_mood)}
+`;
 
   afterBox.innerHTML = `
-    <div class="grid grid-cols-1 gap-3">
-      ${statCard('Total Interaksi', after.total_interactions ?? 0)}
-      ${statCard('User Unik', after.unique_users ?? 0)}
-    </div>
-  `;
+  <div class="grid grid-cols-1 gap-3">
+    ${statCard('Total Interaksi', after.total_interactions ?? 0)}
+    ${statCard('User Unik', after.unique_users ?? 0)}
+  </div>
+
+  <h4 class="mt-4 font-semibold text-gray-700">Statistik per Mood</h4>
+  ${renderMoodTable(after.by_mood)}
+`;
 
   // render comparison chart (single canvas placed below the two boxes)
   let chartContainer = document.getElementById('before-after-chart-container');
