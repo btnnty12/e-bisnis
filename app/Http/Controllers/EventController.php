@@ -3,12 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\PageView;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class EventController extends Controller
 {
     public function index()
     {
+        // tracking akses halaman list event (public)
+        PageView::create([
+            'user_id' => Auth::id(),
+            'page' => 'event_list',
+        ]);
+
         return Event::orderBy('id', 'desc')->get();
     }
 
@@ -26,7 +34,16 @@ class EventController extends Controller
 
     public function show($id)
     {
-        return Event::findOrFail($id);
+        $event = Event::findOrFail($id);
+
+        // tracking akses halaman detail event (public)
+        PageView::create([
+            'event_id' => $event->id,
+            'user_id' => Auth::id(),
+            'page' => 'event_detail',
+        ]);
+
+        return $event;
     }
 
     public function update(Request $request, $id)

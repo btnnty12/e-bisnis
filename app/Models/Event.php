@@ -22,11 +22,11 @@ class Event extends Model
      * =====================
      */
 
-    // Event bisa punya banyak tenant melalui pivot table event_tenant
+    // Event bisa punya banyak tenant melalui pivot table tenant_event
     public function tenants()
     {
-        return $this->belongsToMany(Tenant::class, 'event_tenant')
-                    ->withPivot('active') // status tenant ikut event atau tidak
+        return $this->belongsToMany(\App\Models\Tenant::class, 'tenant_event')
+                    ->withPivot('start_date', 'end_date', 'active')
                     ->withTimestamps();
     }
 
