@@ -45,16 +45,21 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
     .page-section {
-      display: none;
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1rem;
-    }
-    .page-section.active {
-      display: block;
-      animation: fadeIn 0.3s ease-out;
-    }
+  display: none;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+
+  /* INI PENTING */
+  pointer-events: none;
+}
+
+.page-section.active {
+  display: block;
+  animation: fadeIn 0.3s ease-out;
+  pointer-events: auto;
+}
     .bottom-nav-item {
       transition: all 0.3s ease;
       cursor: pointer;
@@ -697,8 +702,8 @@ function closeRecommendation() {
   </div>
 
   <!-- Page 6: Statistics (Admin/Tenant Only) -->
-<div id="page-6" class="page-section relative z-10"
-     style="padding-top:80px; padding-bottom:120px; display:none;">
+<div id="page-6" class="page-section"
+     style="padding-top:80px; padding-bottom:120px;">
   <div class="max-w-7xl mx-auto py-6">
     <h1 class="text-4xl font-bold text-gray-800 mb-2">Statistik MoodFood</h1>
     <p class="text-gray-600 mb-6">Laporan statistik interaksi pengguna</p>
@@ -839,8 +844,114 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+  <script>
+    // Functions to load statistics (used by 'Tampilkan' buttons)
+    async function loadBeforeAfterStats() {
+      const dateInput = document.getElementById('date-input');
+      const beforeResults = document.getElementById('before-stats');
+      const afterResults = document.getElementById('after-stats');
+      const resultsContainer = document.getElementById('before-after-results');
 
- <!-- Bottom Navigation -->
+      if (!dateInput || !dateInput.value) {
+        alert('Pilih tanggal terlebih dahulu');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/statistics/before-after?date=${encodeURIComponent(dateInput.value)}`);
+        if (!res.ok) throw new Error('Gagal mengambil data');
+        const data = await res.json();
+
+        // Populate basic stats
+        beforeResults.innerHTML = `
+          <p>Total Interaksi: <b>${data.before?.total_interactions ?? 0}</b></p>
+          <p>Pengguna Unik: <b>${data.before?.unique_users ?? 0}</b></p>
+          ${Array.isArray(data.before?.by_mood) ? `<p class="mt-2 font-semibold">Distribusi Mood:</p><ul class="text-sm ml-4">${data.before.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>` : ''}
+        `;
+
+        afterResults.innerHTML = `
+          <p>Total Interaksi: <b>${data.after?.total_interactions ?? 0}</b></p>
+          <p>Pengguna Unik: <b>${data.after?.unique_users ?? 0}</b></p>
+          ${Array.isArray(data.after?.by_mood) ? `<p class="mt-2 font-semibold">Distribusi Mood:</p><ul class="text-sm ml-4">${data.after.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>` : ''}
+        `;
+
+        if (resultsContainer) resultsContainer.classList.remove('hidden');
+      } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan saat mengambil data statistik.');
+      }
+    }
+
+    async function loadEventStats() {
+      const select = document.getElementById('event-select');
+      const container = document.getElementById('event-stats-content');
+      const perEventResults = document.getElementById('per-event-results');
+
+      if (!container) return;
+
+      let url = '/statistics/per-event';
+      if (select && select.value) url += `?event_id=${encodeURIComponent(select.value)}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Gagal mengambil data event');
+        const data = await res.json();
+
+        // Render similar to statistics page
+        if (Array.isArray(data.events)) {
+          if (data.events.length === 0) {
+            container.innerHTML = `<p class="text-gray-500">Belum ada interaksi pada event</p>`;
+          } else {
+            if (select && select.value) {
+              const e = data.events[0];
+              container.innerHTML = `
+                <div class="bg-white rounded-lg shadow p-4">
+                  <h4 class="font-semibold text-lg">${e.event_name ?? 'Event'}</h4>
+                  ${e.description ? `<p class="text-sm text-gray-500 mb-2">${e.description}</p>` : ''}
+                  <p>Total Interaksi: <b>${e.total_interactions ?? 0}</b></p>
+                  <p>Pengguna Unik: <b>${e.unique_users ?? 0}</b></p>
+                  <h5 class="font-semibold mt-3">Distribusi Mood</h5>
+                  ${e.by_mood?.length ? `<ul class="list-disc ml-5 text-sm">${e.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>` : `<p class="text-gray-500 text-sm">Belum ada data mood</p>`}
+                </div>
+              `;
+            } else {
+              container.innerHTML = `
+                <div class="bg-white rounded-lg shadow p-4">
+                  <h4 class="font-semibold text-lg mb-2">Ringkasan Semua Event</h4>
+                  <ul class="space-y-2">
+                    ${data.events.map(ev=>`<li class="flex justify-between border-b pb-1"><span>${ev.event.event_name ?? ev.event_name}</span><b>${ev.total_interactions ?? 0} interaksi</b></li>`).join('')}
+                  </ul>
+                </div>
+              `;
+            }
+          }
+        } else if (data.event) {
+          const e = data.event;
+          container.innerHTML = `
+            <div class="bg-white rounded-lg shadow p-4">
+              <h4 class="font-semibold text-lg">${e.event_name ?? 'Event'}</h4>
+              <p class="text-sm text-gray-500 mb-2">${e.description ?? ''}</p>
+              <p>Total Interaksi: <b>${data.total_interactions ?? 0}</b></p>
+              <p>Pengguna Unik: <b>${data.unique_users ?? 0}</b></p>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `<p class="text-red-600">Format data tidak dikenali</p>`;
+        }
+
+        if (perEventResults) perEventResults.classList.remove('hidden');
+      } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan saat mengambil data event.');
+      }
+    }
+
+    // Expose to global so existing listeners can call them
+    window.loadBeforeAfterStats = loadBeforeAfterStats;
+    window.loadEventStats = loadEventStats;
+  </script>
+
+<!-- Bottom Navigation -->
 <div id="bottom-nav"
   class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-[9999] pointer-events-auto transition-transform duration-150 ease-out">
   <div class="max-w-7xl mx-auto px-4 py-3 flex justify-center space-x-8 sm:space-x-12 text-center">
@@ -1072,632 +1183,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
   <script>
     let currentPage = 1;
-    let moodBeforeChart = null;
-    let moodAfterChart = null;
 
-    function showPage(pageNum) {
-      // hide all pages
-      document.querySelectorAll('.page-section').forEach(page => {
-        page.classList.remove('active');
-        page.style.display = 'none';
-        page.style.pointerEvents = 'none';
-      });
-
-      const targetPage = document.getElementById(`page-${pageNum}`);
-      if (!targetPage) {
-        console.warn('Requested page not found:', pageNum);
+    function showPage(pageNumber) {
+      if (!pageNumber || typeof pageNumber !== 'number') {
+        console.warn('Invalid page number:', pageNumber);
         return;
       }
 
-      // show target
-      targetPage.classList.add('active');
-      targetPage.style.display = 'block';
-      targetPage.style.pointerEvents = 'auto';
-      currentPage = pageNum;
-
-      // update nav active state
-      const navItems = Array.from(document.querySelectorAll('.bottom-nav-item'));
-      navItems.forEach((item, idx) => item.classList.toggle('active', idx === pageNum - 1));
-
-      window.scrollTo(0, 0);
-    }
-
-    // Menu Modal Functions
-    function openMenuModal() {
-      document.getElementById('menu-modal').classList.remove('hidden');
-      document.getElementById('menu-modal-title').textContent = 'Tambah Menu Baru';
-      document.getElementById('menu-form').action = '{{ route("dashboard.menus.store") }}';
-      document.getElementById('menu-form-method').value = 'POST';
-      document.getElementById('menu-form').reset();
-      document.getElementById('menu-id').value = '';
-    }
-
-    function closeMenuModal() {
-      document.getElementById('menu-modal').classList.add('hidden');
-    }
-
-    function editMenu(id, name, price, description, tenantId, categoryId) {
-      document.getElementById('menu-modal').classList.remove('hidden');
-      document.getElementById('menu-modal-title').textContent = 'Edit Menu';
-      document.getElementById('menu-form').action = '{{ route("dashboard.menus.update", ":id") }}'.replace(':id', id);
-      document.getElementById('menu-form-method').value = 'PUT';
-      document.getElementById('menu-id').value = id;
-      document.getElementById('menu_name').value = name;
-      document.getElementById('price').value = price;
-      document.getElementById('description').value = description || '';
-      document.getElementById('tenant_id').value = tenantId;
-      document.getElementById('category_id').value = categoryId;
-    }
-
-    // Category Modal Functions
-    function openCategoryModal() {
-      document.getElementById('category-modal').classList.remove('hidden');
-      document.getElementById('category-modal-title').textContent = 'Tambah Kategori Baru';
-      document.getElementById('category-form').action = '{{ route("dashboard.categories.store") }}';
-      document.getElementById('category-form-method').value = 'POST';
-    }
-
-    function closeCategoryModal() {
-      document.getElementById('category-modal').classList.add('hidden');
-    }
-
-    function editCategory(id, name, moodId) {
-      document.getElementById('category-modal').classList.remove('hidden');
-      document.getElementById('category-modal-title').textContent = 'Edit Kategori';
-      document.getElementById('category-form').action = '{{ route("dashboard.categories.update", ":id") }}'.replace(':id', id);
-      document.getElementById('category-form-method').value = 'PUT';
-      document.getElementById('category-id').value = id;
-      // populate fields if inputs exist
-      const nameInput = document.querySelector('#category-modal input[name="category_name"]');
-      if (nameInput) nameInput.value = name || '';
-      const moodSelect = document.querySelector('#category-modal select[name="mood_id"]');
-      if (moodSelect) moodSelect.value = moodId || '';
-    }
-
-    // Mood Modal Functions
-    function openMoodModal() {
-      const modal = document.getElementById('mood-modal');
-      if (!modal) return;
-      modal.classList.remove('hidden');
-      const title = document.getElementById('mood-modal-title');
-      if (title) title.textContent = 'Tambah Mood Baru';
-      const form = document.getElementById('mood-form');
-      if (form) {
-        form.action = '{{ route("dashboard.moods.store") }}';
-        // reset if inputs exist
-        try { form.reset(); } catch(e){}
-        const methodEl = document.getElementById('mood-form-method');
-        if (methodEl) methodEl.value = 'POST';
-      }
-    }
-
-    function closeMoodModal() {
-      const modal = document.getElementById('mood-modal');
-      if (!modal) return;
-      modal.classList.add('hidden');
-    }
-
-    function editMood(id, name, description) {
-      const modal = document.getElementById('mood-modal');
-      if (!modal) return;
-      modal.classList.remove('hidden');
-      const title = document.getElementById('mood-modal-title');
-      if (title) title.textContent = 'Edit Mood';
-      const form = document.getElementById('mood-form');
-      if (form) {
-        try { form.action = '{{ route("dashboard.moods.update", ":id") }}'.replace(':id', id); } catch(e){}
-        const methodEl = document.getElementById('mood-form-method');
-        if (methodEl) methodEl.value = 'PUT';
-        const nameInput = form.querySelector('input[name="mood_name"]');
-        if (nameInput) nameInput.value = name || '';
-        const descInput = form.querySelector('textarea[name="description"]');
-        if (descInput) descInput.value = description || '';
-      }
-    }
-
-function showBeforeAfter() {
-  const before = document.getElementById('section-before-after');
-  const event = document.getElementById('section-per-event');
-
-  if (before) before.classList.remove('hidden');
-  if (event) event.classList.add('hidden');
-}
-
-function showPerEvent() {
-  const before = document.getElementById('section-before-after');
-  const event = document.getElementById('section-per-event');
-
-  if (event) event.classList.remove('hidden');
-  if (before) before.classList.add('hidden');
-}
-
-async function loadBeforeAfterStats() {
-  const dateInput = document.getElementById('date-input');
-  const date = dateInput?.value;
-
-  if (!date) {
-    alert('Silakan pilih tanggal');
-    return;
-  }
-
-  const beforeBox = document.getElementById('before-stats');
-  const afterBox = document.getElementById('after-stats');
-  const wrapper = document.getElementById('before-after-results');
-
-  if (beforeBox) beforeBox.innerHTML = `<p class="text-gray-500">Memuat...</p>`;
-  if (afterBox) afterBox.innerHTML = `<p class="text-gray-500">Memuat...</p>`;
-  if (wrapper) wrapper.classList.remove('hidden');
-
-  try {
-    const res = await fetch(`/statistics/before-after?date=${date}`, {
-      headers: { Accept: 'application/json' }
-    });
-
-    if (!res.ok) throw new Error();
-
-    const data = await res.json();
-    renderBeforeAfterStats(data);
-  } catch (err) {
-    console.error(err);
-    alert('Gagal memuat statistik');
-  }
-}
-
-function renderMoodTable(byMood) {
-  if (!byMood || byMood.length === 0) {
-    return `<p class="text-sm text-gray-500">Belum ada data mood</p>`;
-  }
-
-  let rows = '';
-  byMood.forEach(mood => {
-    rows += `
-      <tr>
-        <td class="border px-3 py-2">${mood.mood_name}</td>
-        <td class="border px-3 py-2 text-center">${mood.total}</td>
-      </tr>
-    `;
-  });
-
-  return `
-    <table class="w-full border mt-4">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="border px-3 py-2 text-left">Mood</th>
-          <th class="border px-3 py-2 text-center">Total Interaksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-  `;
-}
-
-function renderBeforeAfterStats(data) {
-  const wrapper = document.getElementById('before-after-results');
-  const beforeBox = document.getElementById('before-stats');
-  const afterBox = document.getElementById('after-stats');
-
-  if (!wrapper || !beforeBox || !afterBox) return;
-
-  wrapper.classList.remove('hidden');
-
-  const before = data.before || {};
-  const after = data.after || {};
-
-  function statCard(title, value, subtitle = '') {
-    return `
-      <div class="p-4 bg-white rounded-lg shadow-sm">
-        <div class="text-xs text-gray-500">${title}</div>
-        <div class="text-2xl font-bold text-gray-900 mt-2">${value}</div>
-        ${subtitle ? `<div class="text-xs text-gray-400 mt-1">${subtitle}</div>` : ''}
-      </div>
-    `;
-  }
-
-  beforeBox.innerHTML = `
-  <div class="grid grid-cols-1 gap-3">
-    ${statCard('Total Interaksi', before.total_interactions ?? 0)}
-    ${statCard('User Unik', before.unique_users ?? 0)}
-  </div>
-
-  <h4 class="mt-4 font-semibold text-gray-700">Statistik per Mood</h4>
-  ${renderMoodTable(before.by_mood)}
-`;
-
-  afterBox.innerHTML = `
-  <div class="grid grid-cols-1 gap-3">
-    ${statCard('Total Interaksi', after.total_interactions ?? 0)}
-    ${statCard('User Unik', after.unique_users ?? 0)}
-  </div>
-
-  <h4 class="mt-4 font-semibold text-gray-700">Statistik per Mood</h4>
-  ${renderMoodTable(after.by_mood)}
-`;
-
-  // render comparison chart (single canvas placed below the two boxes)
-  let chartContainer = document.getElementById('before-after-chart-container');
-  if (!chartContainer) {
-    chartContainer = document.createElement('div');
-    chartContainer.id = 'before-after-chart-container';
-    chartContainer.className = 'mt-4 p-4 bg-white rounded-lg shadow-sm';
-    wrapper.appendChild(chartContainer);
-  }
-
-  chartContainer.innerHTML = `<canvas id="chart-before-after" style="max-height:260px;"></canvas>`;
-
-  // build dataset
-  const labels = ['Total Interaksi', 'User Unik'];
-  const beforeVals = [before.total_interactions ?? 0, before.unique_users ?? 0];
-  const afterVals = [after.total_interactions ?? 0, after.unique_users ?? 0];
-
-  // destroy previous chart if exists
-  if (window.beforeAfterChart) {
-    try { window.beforeAfterChart.destroy(); } catch(e){}
-  }
-
-  const ctx = document.getElementById('chart-before-after').getContext('2d');
-  window.beforeAfterChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Sebelum', data: beforeVals, backgroundColor: 'rgba(59,130,246,0.6)' },
-        { label: 'Sesudah', data: afterVals, backgroundColor: 'rgba(16,185,129,0.6)' }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'top' } },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-}
-
-function renderEventStats(data) {
-  const container = document.getElementById('event-stats-content');
-  container.innerHTML = '';
-
-  // ===== LIST SEMUA EVENT =====
-  if (data.events && Array.isArray(data.events)) {
-    data.events.forEach(item => {
-      const id = item.event?.id ?? '';
-      const publicVal = item.pay ?? item.public_access ?? item.public_access_count ?? item.public_accesses ?? '';
-      container.innerHTML += `
-        <div class="border rounded-lg p-4 mb-3 bg-white shadow">
-          <h3 class="font-bold text-lg">${item.event.event_name}</h3>
-          <p>Total Akses: ${item.total_interactions}</p>
-          <p class="text-sm text-gray-500">Akses Publik: ${publicVal}</p>
-        </div>
-      `;
-    });
-    return;
-  }
-
-  // ===== DETAIL 1 EVENT =====
-  const item = data[0];
-
-  container.innerHTML = `
-    <div class="bg-white rounded-lg shadow p-4">
-      <h3 class="text-xl font-bold mb-2">${item.event.event_name}</h3>
-      <p class="mb-2">Total Akses: ${item.total_interactions}</p>
-
-      <h4 class="font-semibold mt-4">Statistik Mood</h4>
-      <ul class="list-disc pl-6">
-        ${item.by_mood.map(m => `
-          <li>${m.mood_name}: ${m.total}</li>
-        `).join('')}
-      </ul>
-    </div>
-  `;
-}
-
-async function loadEventStats() {
-  const select = document.getElementById('event-select');
-  const eventId = select?.value;
-
-  const content = document.getElementById('event-stats-content');
-  const wrapper = document.getElementById('per-event-results');
-  if (content) content.innerHTML = `<p class="text-gray-500">Memuat...</p>`;
-  if (wrapper) wrapper.classList.remove('hidden');
-
-  // prefer web route (Blade will produce correct path) then API
-  const tryUrls = [];
-  const webPerEvent = '{{ route("statistics.per-event") }}';
-  const apiPerEvent = '/api/statistics/per-event';
-
-  if (eventId) {
-    tryUrls.push(`${webPerEvent}?event_id=${eventId}`);
-    tryUrls.push(`${apiPerEvent}?event_id=${eventId}`);
-    tryUrls.push(`${webPerEvent}?eventId=${eventId}`);
-    tryUrls.push(`${webPerEvent}?id=${eventId}`);
-  } else {
-    tryUrls.push(webPerEvent);
-    tryUrls.push(apiPerEvent);
-  }
-
-  let attemptResults = [];
-  let lastError = null;
-  for (const url of tryUrls) {
-    try {
-      console.debug('Trying statistics URL:', url);
-      const res = await fetch(url, { headers: { Accept: 'application/json' } });
-      const text = await res.text();
-      // log raw response to console for debugging
-      console.debug('Response status', res.status, 'body:', text);
-      attemptResults.push({ url, status: res.status, body: text });
-
-      if (!res.ok) {
-        lastError = `HTTP ${res.status} for ${url}`;
-        continue; // try next
-      }
-
-      // try parse JSON
-      let data;
-      try { data = JSON.parse(text); } catch(e) { data = text; }
-
-      // nothing meaningful? continue
-      if ((Array.isArray(data) && data.length === 0) || (!data) || (typeof data === 'string' && data.trim() === '')) {
-        lastError = `Empty response for ${url}`;
-        continue;
-      }
-
-      // got data
-      displayEventStats(data);
-      return;
-    } catch (err) {
-      console.error('Error fetching', url, err);
-      lastError = err.message || String(err);
-      attemptResults.push({ url, error: lastError });
-      // try next URL
-    }
-  }
- 
-   // All attempts failed
-  const errMsg = `Gagal memuat statistik event. Terakhir: ${lastError ?? ''}`;
-  console.error(errMsg, attemptResults);
-  if (content) {
-    let html = `<p class="text-red-500 mb-2">${errMsg}</p>`;
-    html += `<div class="text-xs text-gray-500 mb-2">Percobaan:</div><ul class="text-xs text-gray-600 list-disc list-inside">`;
-    attemptResults.forEach(a => {
-      if (a.status) html += `<li>${a.url} — HTTP ${a.status}</li>`;
-      else html += `<li>${a.url} — error: ${a.error}</li>`;
-    });
-    html += '</ul>';
-    content.innerHTML = html;
-  }
-}
-
-function displayEventStats(data) {
-  // ensure we have the target containers in scope
-  const wrapper = document.getElementById('per-event-results');
-  const content = document.getElementById('event-stats-content');
-  if (!wrapper || !content) return;
-  wrapper.classList.remove('hidden');
-  // clear previous content
-  content.innerHTML = '';
-
-  // If backend returned the list shape { events: [...] }, prefer renderEventStats()
-  if (data && data.events && Array.isArray(data.events)) {
-    if (typeof renderEventStats === 'function') {
-      renderEventStats(data);
-      return;
-    }
-
-    // Inline fallback rendering for events list (if renderEventStats not available)
-    let cards = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">';
-    let totalAll = 0;
-    data.events.forEach(item => {
-      const id = item.event?.id ?? '';
-      const name = item.event?.event_name ?? 'Event';
-      const total = Number(item.total_interactions) || 0;
-      const optionEl = document.querySelector(`#event-select option[value="${id}"]`);
-      const optionPay = optionEl ? optionEl.dataset.pay : null;
-      const publicVal = item.pay ?? item.public_access ?? item.public_access_count ?? item.public_accesses ?? optionPay ?? '';
-      totalAll += total;
-      cards += `
-        <div class="p-4 bg-white rounded-lg shadow-sm">
-          <div class="text-xs text-gray-500">Event</div>
-          <div class="text-lg font-semibold text-gray-800 mt-1">${name}</div>
-          <div class="text-sm text-gray-400 mt-1">ID: ${id}</div>
-          <div class="text-sm text-gray-500 mt-1">Akses Publik: ${publicVal}</div>
-          <div class="text-2xl font-bold text-gray-900 mt-3">${total}</div>
-          <div class="mt-3">
-            <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="document.getElementById('event-select').value='${id}'; loadEventStats();">Lihat</button>
-          </div>
-        </div>
-      `;
-    });
-    cards += '</div>';
-
-    content.innerHTML = `
-      <div class="mb-4">
-        <div class="p-4 bg-white rounded-lg shadow-sm">
-          <div class="text-sm text-gray-500">Total Interaksi (semua event)</div>
-          <div class="text-2xl font-bold text-gray-900 mt-2">${totalAll}</div>
-        </div>
-      </div>
-    `;
-    content.innerHTML += cards;
-    return;
-  }
-
-  // Determine event name from select or response
-  const select = document.getElementById('event-select');
-  const eventName = (select?.selectedOptions && select.selectedOptions[0]?.text) || data.event_name || '';
-
-  // Header
-  content.innerHTML += `
-    <div class="mb-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-lg font-semibold text-gray-800">${eventName ? `Statistik: ${eventName}` : 'Statistik Event'}</h3>
-          <p class="text-sm text-gray-500">Ringkasan dan detail untuk event yang dipilih</p>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // If backend returned detailed event object with daily_interactions -> render chart + summary
-  if (Array.isArray(data.daily_interactions)) {
-    // summary cards
-    const total = data.total_interactions ?? 0;
-    const uniq = data.unique_users ?? 0;
-    content.innerHTML += `
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <div class="p-4 bg-white rounded-lg shadow-sm">
-          <div class="text-xs text-gray-500">Total Interaksi</div>
-          <div class="text-2xl font-bold text-gray-900 mt-2">${total}</div>
-        </div>
-        <div class="p-4 bg-white rounded-lg shadow-sm">
-          <div class="text-xs text-gray-500">User Unik</div>
-          <div class="text-2xl font-bold text-gray-900 mt-2">${uniq}</div>
-        </div>
-      </div>
-    `;
-
-    // prepare chart data
-    const labels = data.daily_interactions.map(r => r.date);
-    const values = data.daily_interactions.map(r => Number(r.total));
-
-    content.innerHTML += `<div class="p-4 bg-white rounded-lg shadow-sm"><canvas id="chart-per-event" style="max-height:320px;"></canvas></div>`;
-    if (window.perEventChart) try { window.perEventChart.destroy(); } catch(e){}
-    const ctx = document.getElementById('chart-per-event').getContext('2d');
-    window.perEventChart = new Chart(ctx, {
-      type: 'bar',
-      data: { labels, datasets: [{ label: eventName || 'Interaksi harian', data: values, backgroundColor: 'rgba(59,130,246,0.6)' }] },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero:true } } }
-    });
-
-    return;
-  }
-
-  // If response contains a summary object, render as cards
-  const summary = data.summary || data.stats || null;
-  if (summary && typeof summary === 'object' && !Array.isArray(summary)) {
-    let cards = '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">';
-    Object.entries(summary).forEach(([k, v]) => {
-      const title = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      cards += `
-        <div class="p-4 bg-white rounded-lg shadow-sm">
-          <div class="text-xs text-gray-500">${title}</div>
-          <div class="text-2xl font-bold text-gray-900 mt-2">${typeof v === 'number' ? v : (v ?? '')}</div>
-        </div>
-      `;
-    });
-    cards += '</div>';
-    content.innerHTML += cards;
-  }
-
-  // If data is chart-friendly (labels & values)
-  if (data && Array.isArray(data.labels) && Array.isArray(data.values)) {
-    content.innerHTML += `<div class="p-4 bg-white rounded-lg shadow-sm"><canvas id="chart-per-event" style="max-height:320px;"></canvas></div>`;
-    if (window.perEventChart) try { window.perEventChart.destroy(); } catch (e) {}
-    const ctx = document.getElementById('chart-per-event').getContext('2d');
-    window.perEventChart = new Chart(ctx, {
-      type: data.type || 'line',
-      data: {
-        labels: data.labels,
-        datasets: [{
-          label: data.label || eventName || 'Data',
-          data: data.values,
-          borderColor: 'rgba(59,130,246,1)',
-          backgroundColor: 'rgba(59,130,246,0.12)',
-          fill: true,
-          pointRadius: 3
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: true } },
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-    return;
-  }
-
-  // If data is an array -> render table
-  if (Array.isArray(data)) {
-    if (data.length === 0) {
-      content.innerHTML = `<p class="text-gray-500">Tidak ada data untuk event ini.</p>`;
-      return;
-    }
-
-    // Recognize the 'events summary' shape returned when no event_id filter provided
-    // expected item: { event: { id, event_name }, total_interactions: N }
-    const first = data[0];
-    if (first && first.event && (first.total_interactions !== undefined)) {
-      // render as cards grid
-      let cards = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">';
-      let totalAll = 0;
-      data.forEach(item => {
-        const id = item.event?.id ?? '';
-        const name = item.event?.event_name ?? 'Event';
-        const total = Number(item.total_interactions) || 0;
-        totalAll += total;
-        cards += `
-          <div class="p-4 bg-white rounded-lg shadow-sm">
-            <div class="text-xs text-gray-500">Event</div>
-            <div class="text-lg font-semibold text-gray-800 mt-1">${name}</div>
-            <div class="text-sm text-gray-400 mt-1">ID: ${id}</div>
-            <div class="text-sm text-gray-500 mt-1">Akses Publik: ${publicVal}</div>
-            <div class="text-2xl font-bold text-gray-900 mt-3">${total}</div>
-            <div class="mt-3">
-              <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="document.getElementById('event-select').value='${id}'; loadEventStats();">Lihat</button>
-            </div>
-          </div>
-        `;
+      // hide all pages
+      document.querySelectorAll('.page-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+        section.style.pointerEvents = 'none';
       });
-      cards += '</div>';
 
-      // show aggregate summary on top
-      content.innerHTML = `
-        <div class="mb-4">
-          <div class="p-4 bg-white rounded-lg shadow-sm">
-            <div class="text-sm text-gray-500">Total Interaksi (semua event)</div>
-            <div class="text-2xl font-bold text-gray-900 mt-2">${totalAll}</div>
-          </div>
-        </div>
-      `;
-      content.innerHTML += cards;
-      return;
+      // show the chosen page
+      const target = document.getElementById('page-' + pageNumber);
+      if (!target) {
+        console.warn('Requested page not found:', pageNumber);
+        return;
+      }
+      target.classList.add('active');
+      target.style.display = 'block';
+      target.style.pointerEvents = 'auto';
+      currentPage = pageNumber;
+
+      // update active state on bottom nav items
+      document.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.remove('active'));
+      // prefer matching onclick attribute, fallback to index
+      const navItems = Array.from(document.querySelectorAll('.bottom-nav-item'));
+      const matched = navItems.find(item => (item.getAttribute('onclick') || '').includes(`showPage(${pageNumber})`));
+      if (matched) matched.classList.add('active');
+      else if (navItems[pageNumber - 1]) navItems[pageNumber - 1].classList.add('active');
+
+      // scroll to top of page for better UX
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e) { window.scrollTo(0,0); }
     }
 
-    // Fallback to table for generic arrays
-    const keys = Object.keys(data[0]);
-    let table = `<div class="overflow-x-auto bg-white rounded-lg shadow-sm"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr>`;
-    keys.forEach(k => table += `<th class="px-4 py-2 text-left text-xs font-medium text-gray-500">${k}</th>`);
-    table += `</tr></thead><tbody class="bg-white divide-y divide-gray-100">`;
-
-    data.forEach(row => {
-      table += '<tr>';
-      keys.forEach(k => table += `<td class="px-4 py-3 text-sm text-gray-700">${typeof row[k] === 'object' ? JSON.stringify(row[k]) : (row[k] ?? '')}</td>`);
-      table += '</tr>';
+    // Ensure initial page is displayed once DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      // If any page already has the .active class in HTML, respect it and set currentPage accordingly
+      const initial = document.querySelector('.page-section.active');
+      if (initial) {
+        const id = initial.id || '';
+        const m = id.match(/page-(\d+)/);
+        if (m) currentPage = parseInt(m[1], 10);
+      }
+      showPage(currentPage || 1);
     });
-
-    table += '</tbody></table></div>';
-    content.innerHTML = table;
-    return;
-  }
-  
-  // Fallback: raw JSON
-  content.innerHTML += `<pre class="text-sm text-gray-700 whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
-}
-
-window.onclick = function (e) {
-  if (e.target === document.getElementById('menu-modal')) closeMenuModal();
-  if (e.target === document.getElementById('category-modal')) closeCategoryModal();
-  if (e.target === document.getElementById('mood-modal')) closeMoodModal();
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-  try {
-    showPage(currentPage || 1);
-  } catch {}
-});
-</script>
+    </script>
 
   <script>
 

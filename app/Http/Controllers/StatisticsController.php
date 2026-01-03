@@ -104,44 +104,45 @@ class StatisticsController extends Controller
      * =========================
      */
     public function index()
-    {
-        $events = Schema::hasTable('events')
-            ? Event::orderBy('id', 'desc')->get()
-            : collect([]);
+{
+    $events = Schema::hasTable('events')
+        ? Event::orderBy('id', 'desc')->get()
+        : collect([]);
 
-        $eventStats = $events->map(function ($e) {
-            $totalInteractions = Interaction::where('event_id', $e->id)->count();
+    $eventStats = $events->map(function ($e) {
+        $totalInteractions = Interaction::where('event_id', $e->id)->count();
 
-            $uniqueUsers = Interaction::where('event_id', $e->id)
-                ->whereNotNull('user_id')
-                ->distinct()
-                ->count('user_id');
+        $uniqueUsers = Interaction::where('event_id', $e->id)
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->count('user_id');
 
-            $byMood = Interaction::where('event_id', $e->id)
-                ->select(
-                    'mood_id',
-                    DB::raw('COUNT(*) as total_interactions'),
-                    DB::raw('COUNT(DISTINCT user_id) as unique_users')
-                )
-                ->with('mood:id,mood_name')
-                ->groupBy('mood_id')
-                ->get()
-                ->map(fn ($i) => [
-                    'mood_name'           => $i->mood->mood_name ?? 'Unknown',
-                    'total_interactions' => $i->total_interactions,
-                    'unique_users'       => $i->unique_users,
-                ]);
+        $byMood = Interaction::where('event_id', $e->id)
+            ->select(
+                'mood_id',
+                DB::raw('COUNT(*) as total_interactions'),
+                DB::raw('COUNT(DISTINCT user_id) as unique_users')
+            )
+            ->with('mood:id,mood_name')
+            ->groupBy('mood_id')
+            ->get()
+            ->map(fn ($i) => [
+                'mood_name'           => $i->mood->mood_name ?? 'Unknown',
+                'total_interactions' => $i->total_interactions,
+                'unique_users'       => $i->unique_users,
+            ]);
 
-            return [
-                'event'              => $e,
-                'total_interactions' => $totalInteractions,
-                'unique_users'       => $uniqueUsers,
-                'by_mood'            => $byMood,
-            ];
-        });
+        return [
+            'event'              => $e,
+            'total_interactions' => $totalInteractions,
+            'unique_users'       => $uniqueUsers,
+            'by_mood'            => $byMood,
+        ];
+    });
 
-        return view('statistics.index', compact('eventStats'));
-    }
+    // ✅ FIX DI SINI
+    return view('statistics.index', compact('events', 'eventStats'));
+}
 
     /**
      * =========================
