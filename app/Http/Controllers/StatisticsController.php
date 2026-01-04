@@ -183,6 +183,17 @@ class StatisticsController extends Controller
 
     /**
      * =========================
+     * BEFORE & AFTER MOOD (API ALIAS)
+     * =========================
+     */
+    public function beforeAfterMood(Request $request)
+    {
+        // Alias to beforeAfter as it already returns mood data
+        return $this->beforeAfter($request);
+    }
+
+    /**
+     * =========================
      * HELPER: HITUNG DATA (MOOD-BASED)
      * =========================
      */

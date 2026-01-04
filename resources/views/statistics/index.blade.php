@@ -90,11 +90,12 @@
             <option value="{{ $event->id }}">{{ $event->event_name }}</option>
           @endforeach
         </select>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <button id="btn-show-event" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
           Tampilkan
         </button>
       </div>
     </div>
+    <div id="per-event-result-container"></div>
   </section>
 
 </main>
@@ -102,6 +103,7 @@
 <script>
 let moodBeforeChart=null;
 let moodAfterChart=null;
+let eventChart=null;
 
 const dateInput=document.getElementById('date-input');
 const beforeStats=document.getElementById('before-stats');
@@ -110,6 +112,7 @@ const chartMoodBefore=document.getElementById('chart-mood-before');
 const chartMoodAfter=document.getElementById('chart-mood-after');
 const eventSelect=document.getElementById('event-select');
 const sectionPerEvent=document.getElementById('section-per-event');
+const btnShowEvent=document.getElementById('btn-show-event');
 
 /* TAB */
 function showBeforeAfter(){section('before-after');}
@@ -146,12 +149,12 @@ function displayBeforeAfter(data){
                         <p>Pengguna Unik: <b>${data.after.unique_users??0}</b></p>`;
   moodBeforeChart?.destroy();
   moodAfterChart?.destroy();
-  moodBeforeChart=new Chart(chartMoodBefore,{type:'doughnut',data:{labels:data.before.by_mood?.map(m=>m.mood_name)||[],datasets:[{data:data.before.by_mood?.map(m=>m.total)||[]}]}}); 
-  moodAfterChart=new Chart(chartMoodAfter,{type:'doughnut',data:{labels:data.after.by_mood?.map(m=>m.mood_name)||[],datasets:[{data:data.after.by_mood?.map(m=>m.total)||[]}]}}); 
+  moodBeforeChart=new Chart(chartMoodBefore,{type:'doughnut',data:{labels:data.before.by_mood?.map(m=>m.mood_name)||[],datasets:[{data:data.before.by_mood?.map(m=>m.total_interactions)||[],backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF']}]}}); 
+  moodAfterChart=new Chart(chartMoodAfter,{type:'doughnut',data:{labels:data.after.by_mood?.map(m=>m.mood_name)||[],datasets:[{data:data.after.by_mood?.map(m=>m.total_interactions)||[],backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF']}]}}); 
 }
 
 /* PER EVENT */
-sectionPerEvent.querySelector('button').addEventListener('click',async ()=>{
+btnShowEvent.addEventListener('click',async ()=>{
   let url='/statistics/per-event';
   if(eventSelect.value) url+=`?event_id=${eventSelect.value}`;
   try{
@@ -163,60 +166,99 @@ sectionPerEvent.querySelector('button').addEventListener('click',async ()=>{
 });
 
 function renderPerEvent(data){
-  let resultBox=document.getElementById('per-event-result');
-  if(resultBox) resultBox.remove();
-  resultBox=document.createElement('div');
-  resultBox.id='per-event-result';
+  const container = document.getElementById('per-event-result-container');
+  container.innerHTML = ''; // Clear previous results
+
+  let resultBox=document.createElement('div');
   resultBox.className='bg-white rounded-xl shadow p-6 space-y-4';
 
   if(Array.isArray(data.events)){
+    // LIST ALL EVENTS
     if(data.events.length===0){
       resultBox.innerHTML=`<p class="text-gray-500">Belum ada interaksi pada event</p>`;
     }else{
-      if(eventSelect.value){
-        const e=data.events[0];
-        resultBox.innerHTML=`
-          <h4 class="font-semibold text-lg">${e.event_name??'Event'}</h4>
-          ${e.description?`<p class="text-sm text-gray-500 mb-2">${e.description}</p>`:''}
-          <p>Total Interaksi: <b>${e.total_interactions??0}</b></p>
-          <p>Pengguna Unik: <b>${e.unique_users??0}</b></p>
-          <h5 class="font-semibold mt-4">Distribusi Mood</h5>
-          ${
-            e.by_mood?.length
-              ? `<ul class="list-disc ml-5 text-sm">${e.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>`
-              : `<p class="text-gray-500 text-sm">Belum ada data mood</p>`
-          }
-        `;
-      }else{
-        resultBox.innerHTML=`
-          <h4 class="font-semibold text-lg mb-2">Ringkasan Semua Event</h4>
-          <ul class="space-y-2">
-            ${data.events.map(e=>`<li class="flex justify-between border-b pb-1">
-              <span>${e.event.event_name??e.event_name}</span>
-              <b>${e.total_interactions??0} interaksi</b>
-            </li>`).join('')}
-          </ul>
-        `;
-      }
+      resultBox.innerHTML=`
+        <h4 class="font-semibold text-lg mb-2">Ringkasan Semua Event</h4>
+        <ul class="space-y-2 mb-6">
+          ${data.events.map(e=>`<li class="flex justify-between border-b pb-1">
+            <span>${e.event.event_name??e.event_name}</span>
+            <b>${e.total_interactions??0} interaksi</b>
+          </li>`).join('')}
+        </ul>
+        <div class="h-64">
+             <canvas id="chart-event-mood"></canvas>
+        </div>
+      `;
+      container.appendChild(resultBox);
+      
+      // Render Bar Chart for All Events (Interactions count)
+      const ctx = document.getElementById('chart-event-mood').getContext('2d');
+      eventChart?.destroy();
+      eventChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.events.map(e => e.event.event_name),
+            datasets: [{
+                label: 'Total Interaksi',
+                data: data.events.map(e => e.total_interactions),
+                backgroundColor: '#3b82f6'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
     }
   }else if(data.event){
+    // SINGLE EVENT DETAIL
     const e=data.event;
     resultBox.innerHTML=`
       <h4 class="font-semibold text-lg">${e.event_name??'Event'}</h4>
       <p class="text-sm text-gray-500 mb-2">${e.description??''}</p>
-      <p>Total Interaksi: <b>${data.total_interactions??0}</b></p>
-      <p>Pengguna Unik: <b>${data.unique_users??0}</b></p>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="bg-blue-50 p-4 rounded-lg">
+            <p class="text-sm text-gray-600">Total Interaksi</p>
+            <p class="text-xl font-bold text-blue-700">${data.total_interactions??0}</p>
+        </div>
+        <div class="bg-green-50 p-4 rounded-lg">
+            <p class="text-sm text-gray-600">Pengguna Unik</p>
+            <p class="text-xl font-bold text-green-700">${data.unique_users??0}</p>
+        </div>
+      </div>
       <h5 class="font-semibold mt-4">Distribusi Mood</h5>
-      ${
-        data.by_mood?.length
-          ? `<ul class="list-disc ml-5 text-sm">${data.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>`
-          : `<p class="text-gray-500 text-sm">Belum ada data mood</p>`
-      }
+      <div class="h-64">
+           <canvas id="chart-event-mood"></canvas>
+      </div>
     `;
+    container.appendChild(resultBox);
+
+    // Render Bar Chart for Mood Distribution in this Event
+    const ctx = document.getElementById('chart-event-mood').getContext('2d');
+    eventChart?.destroy();
+    
+    const moodLabels = data.by_mood?.map(m => m.mood_name) || [];
+    const moodData = data.by_mood?.map(m => m.total_interactions) || [];
+
+    if(moodLabels.length > 0) {
+        eventChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: moodLabels,
+                datasets: [{
+                    label: 'Jumlah Interaksi Mood',
+                    data: moodData,
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                    ]
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    } else {
+        document.getElementById('chart-event-mood').parentNode.innerHTML = '<p class="text-gray-500 italic">Belum ada data mood untuk ditampilkan di chart.</p>';
+    }
   }else{
     resultBox.innerHTML=`<p class="text-red-600">Format data tidak dikenali</p>`;
+    container.appendChild(resultBox);
   }
-  sectionPerEvent.appendChild(resultBox);
 }
 </script>
 

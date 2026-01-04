@@ -147,4 +147,100 @@ public function updateMood(Request $request, $id)
         ->with('success', 'Mood berhasil diperbarui.');
 }
 
+    /**
+     * =========================
+     * MENU ACTIONS
+     * =========================
+     */
+    public function storeMenu(Request $request)
+    {
+        $request->validate([
+            'menu_name'   => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'tenant_id'   => 'required|exists:tenants,id',
+            'price'       => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'image'       => 'nullable|string', // Bisa URL atau path
+        ]);
+
+        Menu::create($request->all());
+
+        return redirect()->route('dashboard.menus')->with('success', 'Menu berhasil ditambahkan.');
+    }
+
+    public function updateMenu(Request $request, $id)
+    {
+        $request->validate([
+            'menu_name'   => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'tenant_id'   => 'required|exists:tenants,id',
+            'price'       => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'image'       => 'nullable|string',
+        ]);
+
+        $menu = Menu::findOrFail($id);
+        $menu->update($request->all());
+
+        return redirect()->route('dashboard.menus')->with('success', 'Menu berhasil diperbarui.');
+    }
+
+    public function deleteMenu($id)
+    {
+        Menu::destroy($id);
+        return redirect()->route('dashboard.menus')->with('success', 'Menu berhasil dihapus.');
+    }
+
+    /**
+     * =========================
+     * CATEGORY ACTIONS
+     * =========================
+     */
+    public function storeCategory(Request $request)
+    {
+        $request->validate([
+            'category_name' => 'required|string|max:100',
+            'mood_id'       => 'required|exists:moods,id',
+        ]);
+
+        Category::create($request->all());
+
+        return redirect()->route('dashboard.categories')->with('success', 'Kategori berhasil ditambahkan.');
+    }
+
+    public function updateCategory(Request $request, $id)
+    {
+        $request->validate([
+            'category_name' => 'required|string|max:100',
+            'mood_id'       => 'required|exists:moods,id',
+        ]);
+
+        $category = Category::findOrFail($id);
+        $category->update($request->all());
+
+        return redirect()->route('dashboard.categories')->with('success', 'Kategori berhasil diperbarui.');
+    }
+
+    public function deleteCategory($id)
+    {
+        Category::destroy($id);
+        return redirect()->route('dashboard.categories')->with('success', 'Kategori berhasil dihapus.');
+    }
+
+    /**
+     * =========================
+     * MOOD ACTIONS
+     * =========================
+     */
+    public function storeMood(Request $request)
+    {
+        $request->validate([
+            'mood_name'   => 'required|string|max:100',
+            'description' => 'nullable|string',
+        ]);
+
+        Mood::create($request->all());
+
+        return redirect()->route('dashboard.moods')->with('success', 'Mood berhasil ditambahkan.');
+    }
 }
