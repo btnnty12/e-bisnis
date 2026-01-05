@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
 
             MenuSeeder::class,
             UserSeeder::class,
+            InteractionSeeder::class, // ✅ Ditambahkan
             RecommendationSeeder::class,
         ]);
 

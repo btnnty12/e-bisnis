@@ -746,6 +746,22 @@ function closeRecommendation() {
               <div id="after-stats"></div>
             </div>
           </div>
+
+          <!-- Charts Row -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div class="bg-white rounded-lg shadow p-6">
+              <h4 class="font-semibold text-gray-800 mb-4 text-center">Distribusi Mood Sebelum</h4>
+              <div class="h-64 relative">
+                <canvas id="chart-mood-before"></canvas>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+              <h4 class="font-semibold text-gray-800 mb-4 text-center">Distribusi Mood Sesudah</h4>
+              <div class="h-64 relative">
+                <canvas id="chart-mood-after"></canvas>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -845,6 +861,10 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
   <script>
+    let moodBeforeChart = null;
+    let moodAfterChart = null;
+    let eventMoodChart = null;
+
     // Functions to load statistics (used by 'Tampilkan' buttons)
     async function loadBeforeAfterStats() {
       const dateInput = document.getElementById('date-input');
@@ -866,20 +886,62 @@ document.addEventListener('DOMContentLoaded', function () {
         beforeResults.innerHTML = `
           <p>Total Interaksi: <b>${data.before?.total_interactions ?? 0}</b></p>
           <p>Pengguna Unik: <b>${data.before?.unique_users ?? 0}</b></p>
-          ${Array.isArray(data.before?.by_mood) ? `<p class="mt-2 font-semibold">Distribusi Mood:</p><ul class="text-sm ml-4">${data.before.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>` : ''}
         `;
 
         afterResults.innerHTML = `
           <p>Total Interaksi: <b>${data.after?.total_interactions ?? 0}</b></p>
           <p>Pengguna Unik: <b>${data.after?.unique_users ?? 0}</b></p>
-          ${Array.isArray(data.after?.by_mood) ? `<p class="mt-2 font-semibold">Distribusi Mood:</p><ul class="text-sm ml-4">${data.after.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>` : ''}
         `;
+
+        // Render Charts
+        if (moodBeforeChart) moodBeforeChart.destroy();
+        const ctxBefore = document.getElementById('chart-mood-before').getContext('2d');
+        moodBeforeChart = createPieChart(ctxBefore, data.before?.by_mood);
+
+        if (moodAfterChart) moodAfterChart.destroy();
+        const ctxAfter = document.getElementById('chart-mood-after').getContext('2d');
+        moodAfterChart = createPieChart(ctxAfter, data.after?.by_mood);
 
         if (resultsContainer) resultsContainer.classList.remove('hidden');
       } catch (err) {
         console.error(err);
         alert('Terjadi kesalahan saat mengambil data statistik.');
       }
+    }
+
+    function createPieChart(ctx, moodData) {
+      if (!moodData || moodData.length === 0) return null;
+
+      const total = moodData.reduce((sum, item) => sum + item.total_interactions, 0);
+
+      return new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: moodData.map(m => m.mood_name),
+          datasets: [{
+            data: moodData.map(m => m.total_interactions),
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed;
+                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                  return `${context.label}: ${value} (${percentage}%)`;
+                }
+              }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
     }
 
     async function loadEventStats() {
@@ -911,9 +973,17 @@ document.addEventListener('DOMContentLoaded', function () {
                   <p>Total Interaksi: <b>${e.total_interactions ?? 0}</b></p>
                   <p>Pengguna Unik: <b>${e.unique_users ?? 0}</b></p>
                   <h5 class="font-semibold mt-3">Distribusi Mood</h5>
-                  ${e.by_mood?.length ? `<ul class="list-disc ml-5 text-sm">${e.by_mood.map(m=>`<li>${m.mood_name}: ${m.total}</li>`).join('')}</ul>` : `<p class="text-gray-500 text-sm">Belum ada data mood</p>`}
+                  <div class="h-64 mt-4 relative">
+                    ${e.by_mood?.length ? '<canvas id="chart-event-mood"></canvas>' : '<p class="text-gray-500 text-sm">Belum ada data mood</p>'}
+                  </div>
                 </div>
               `;
+              
+              if (e.by_mood?.length) {
+                const ctx = document.getElementById('chart-event-mood').getContext('2d');
+                if (window.eventMoodChart) window.eventMoodChart.destroy();
+                window.eventMoodChart = createPieChart(ctx, e.by_mood);
+              }
             } else {
               container.innerHTML = `
                 <div class="bg-white rounded-lg shadow p-4">

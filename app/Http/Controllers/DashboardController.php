@@ -129,18 +129,18 @@ public function deleteMood($id)
  * UPDATE MOOD ✅ (FIX)
  */
 public function updateMood(Request $request, $id)
-{
-    $request->validate([
-        'mood_name'   => 'required|string|max:100',
-        'description' => 'nullable|string',
-    ]);
+    {
+        $request->validate([
+            'mood_name'   => 'required|string|max:100|unique:moods,mood_name,' . $id,
+            'description' => 'nullable|string',
+        ]);
 
-    $mood = Mood::findOrFail($id);
+        $mood = Mood::findOrFail($id);
 
-    $mood->update([
-        'mood_name'   => $request->mood_name,
-        'description' => $request->description,
-    ]);
+        $mood->update([
+            'mood_name'   => $request->mood_name,
+            'description' => $request->description,
+        ]);
 
     return redirect()
         ->route('dashboard.moods')
@@ -235,7 +235,7 @@ public function updateMood(Request $request, $id)
     public function storeMood(Request $request)
     {
         $request->validate([
-            'mood_name'   => 'required|string|max:100',
+            'mood_name'   => 'required|string|max:100|unique:moods,mood_name',
             'description' => 'nullable|string',
         ]);
 
