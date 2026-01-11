@@ -53,7 +53,47 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('dashboard.index', compact('stats', 'moods', 'eventStats'));
+        // Revenue Dashboard Data
+        $startDate = request('start', date('Y-m-d', strtotime('-7 days')));
+        $endDate   = request('end', date('Y-m-d'));
+        
+        $tenants = Tenant::orderBy('tenant_name')->pluck('tenant_name')->toArray();
+        
+        // Dummy revenue data for demonstration
+        $data = [];
+        $tenantData = [];
+        $startTimestamp = strtotime($startDate);
+        $endTimestamp   = strtotime($endDate);
+        
+        for ($current = $startTimestamp; $current <= $endTimestamp; $current = strtotime('+1 day', $current)) {
+            $dailyTotal = 0;
+            $perTenant = [];
+            
+            foreach ($tenants as $tenant) {
+                // Generate dummy revenue data
+                $tenantTotal = 0;
+                $salesCount = rand(0, 5);
+                for ($i = 0; $i < $salesCount; $i++) {
+                    $quantity = rand(1, 3);
+                    $price    = rand(20000, 100000);
+                    $tenantTotal += $quantity * $price;
+                }
+                $dailyTotal += $tenantTotal;
+                $perTenant[$tenant] = $tenantTotal;
+            }
+            
+            $data[] = (object)[
+                'date'  => date('Y-m-d', $current),
+                'total' => $dailyTotal,
+            ];
+            
+            $tenantData[] = [
+                'date'    => date('Y-m-d', $current),
+                'tenants' => $perTenant
+            ];
+        }
+
+        return view('dashboard.index', compact('stats', 'moods', 'eventStats', 'tenants', 'tenantData', 'data', 'startDate', 'endDate'));
     }
 
     /**
