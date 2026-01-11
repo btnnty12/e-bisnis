@@ -517,189 +517,319 @@ function closeRecommendation() {
 
 
   <!-- Page 3: Dashboard Menus (Admin/Tenant Only) -->
-  <div id="page-3" class="page-section" style="padding-top: 80px; display: none;">
-    <div class="max-w-7xl mx-auto py-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">Pengelolaan Menu</h2>
-        <button onclick="openMenuModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-          + Tambah Menu
-        </button>
+<div id="page-3" class="page-section" style="padding-top: 80px; display: block;">
+  <div class="max-w-7xl mx-auto py-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-3xl font-bold text-gray-900">Pengelolaan Menu</h2>
+      <button onclick="openMenuModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        + Tambah Menu
+      </button>
+    </div>
+
+    @if(session('success'))
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {{ session('success') }}
       </div>
+    @endif
 
-      @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {{ session('success') }}
-        </div>
-      @endif
-
-      <!-- Menu Table -->
-      <div class="bg-white shadow overflow-hidden sm:rounded-md">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Menu</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tenant</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mood</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              @foreach($menus as $menu)
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{{ $menu->menu_name }}</div>
-                  @if($menu->description)
-                  <div class="text-sm text-gray-500">{{ Str::limit($menu->description, 50) }}</div>
-                  @endif
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  Rp {{ number_format($menu->price, 0, ',', '.') }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ $menu->tenant->tenant_name }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ $menu->category->category_name }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ $menu->category->mood->mood_name }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onclick="editMenu({{ $menu->id }}, '{{ addslashes($menu->menu_name) }}', {{ $menu->price }}, '{{ addslashes($menu->description ?? '') }}', {{ $menu->tenant_id }}, {{ $menu->category_id }})" 
-                    class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                  <form action="{{ route('dashboard.menus.delete', $menu->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus menu ini?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
-                  </form>
-                </td>
-              </tr>
-              @endforeach
-            </tbody>
-          </table>
-        </div>
+    <!-- Menu Table -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Menu</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tenant</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mood</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            @foreach($menus as $menu)
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ $menu->menu_name }}</div>
+                @if($menu->description)
+                <div class="text-sm text-gray-500">{{ Str::limit($menu->description, 50) }}</div>
+                @endif
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                Rp {{ number_format($menu->price, 0, ',', '.') }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ $menu->tenant->tenant_name }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ $menu->category->category_name }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ $menu->category->mood->mood_name }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="editMenu({{ $menu->id }}, '{{ addslashes($menu->menu_name) }}', {{ $menu->price }}, '{{ addslashes($menu->description ?? '') }}')" 
+                  class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                <form action="{{ route('dashboard.menus.delete', $menu->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus menu ini?')">
+                  @csrf
+                  @method('DELETE')
+                  <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            @endforeach
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Page 4: Dashboard Categories (Admin/Tenant Only) -->
-  <div id="page-4" class="page-section" style="padding-top: 80px; display: none;">
-    <div class="max-w-7xl mx-auto py-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">Pengelolaan Kategori Mood</h2>
-        <button onclick="openCategoryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-          + Tambah Kategori
-        </button>
+<!-- Page 4: Dashboard Categories (Admin/Tenant Only) -->
+<div id="page-4" class="page-section" style="padding-top: 80px; display: block;">
+  <div class="max-w-7xl mx-auto py-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-3xl font-bold text-gray-900">Pengelolaan Kategori Mood</h2>
+      <button onclick="openCategoryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        + Tambah Kategori
+      </button>
+    </div>
+
+    @if(session('success'))
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {{ session('success') }}
       </div>
+    @endif
 
-      @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {{ session('success') }}
-        </div>
-      @endif
-
-      <!-- Categories Table -->
-      <div class="bg-white shadow overflow-hidden sm:rounded-md">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Kategori</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mood</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              @foreach($categories as $category)
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{{ $category->category_name }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {{ $category->mood->mood_name }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onclick="editCategory({{ $category->id }}, '{{ addslashes($category->category_name) }}', {{ $category->mood_id }})" 
-                    class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                  <form action="{{ route('dashboard.categories.delete', $category->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
-                  </form>
-                </td>
-              </tr>
-              @endforeach
-            </tbody>
-          </table>
-        </div>
+    <!-- Categories Table -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Kategori</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mood</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            @foreach($categories as $category)
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ $category->category_name }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                  {{ $category->mood->mood_name }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="editCategory({{ $category->id }}, '{{ addslashes($category->category_name) }}')" 
+                  class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                <form action="{{ route('dashboard.categories.delete', $category->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
+                  @csrf
+                  @method('DELETE')
+                  <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            @endforeach
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
+</div>
+
+<!-- Modals -->
+
+<!-- Menu Modal -->
+<div id="menuModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg w-full max-w-lg p-6">
+    <h3 id="menuModalTitle" class="text-xl font-bold mb-4">Tambah Menu</h3>
+    <form id="menuForm" method="POST" action="{{ route('dashboard.menus.store') }}">
+      @csrf
+      <input type="hidden" name="_method" id="menuMethod" value="POST">
+
+      <input type="text" name="menu_name" id="menu_name" placeholder="Nama Menu" class="w-full border px-3 py-2 mb-3" required>
+      <input type="number" name="price" id="price" placeholder="Harga" class="w-full border px-3 py-2 mb-3" required>
+      <textarea name="description" id="description" placeholder="Deskripsi" class="w-full border px-3 py-2 mb-3"></textarea>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeMenuModal()" class="px-4 py-2 border rounded">Batal</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div id="categoryModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg w-full max-w-md p-6">
+    <h3 id="categoryModalTitle" class="text-xl font-bold mb-4">Tambah Kategori</h3>
+    <form id="categoryForm" method="POST" action="{{ route('dashboard.categories.store') }}">
+      @csrf
+      <input type="hidden" name="_method" id="categoryMethod" value="POST">
+
+      <input type="text" name="category_name" id="category_name" placeholder="Nama Kategori" class="w-full border px-3 py-2 mb-3" required>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeCategoryModal()" class="px-4 py-2 border rounded">Batal</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+/* ===== MENU ===== */
+function openMenuModal() {
+  document.getElementById('menuModal').classList.remove('hidden');
+  document.getElementById('menuModalTitle').innerText = 'Tambah Menu';
+  document.getElementById('menuForm').action = "{{ route('dashboard.menus.store') }}";
+  document.getElementById('menuMethod').value = 'POST';
+  document.getElementById('menuForm').reset();
+}
+
+function editMenu(id, name, price, description) {
+  document.getElementById('menuModal').classList.remove('hidden');
+  document.getElementById('menuModalTitle').innerText = 'Edit Menu';
+  document.getElementById('menuForm').action = '/dashboard/menus/' + id;
+  document.getElementById('menuMethod').value = 'PUT';
+  document.getElementById('menu_name').value = name;
+  document.getElementById('price').value = price;
+  document.getElementById('description').value = description;
+}
+
+function closeMenuModal() {
+  document.getElementById('menuModal').classList.add('hidden');
+}
+
+/* ===== CATEGORY ===== */
+function openCategoryModal() {
+  document.getElementById('categoryModal').classList.remove('hidden');
+  document.getElementById('categoryModalTitle').innerText = 'Tambah Kategori';
+  document.getElementById('categoryForm').action = "{{ route('dashboard.categories.store') }}";
+  document.getElementById('categoryMethod').value = 'POST';
+  document.getElementById('categoryForm').reset();
+}
+
+function editCategory(id, name) {
+  document.getElementById('categoryModal').classList.remove('hidden');
+  document.getElementById('categoryModalTitle').innerText = 'Edit Kategori';
+  document.getElementById('categoryForm').action = '/dashboard/categories/' + id;
+  document.getElementById('categoryMethod').value = 'PUT';
+  document.getElementById('category_name').value = name;
+}
+
+function closeCategoryModal() {
+  document.getElementById('categoryModal').classList.add('hidden');
+}
+</script>
 
   <!-- Page 5: Dashboard Moods (Admin/Tenant Only) -->
-  <div id="page-5" class="page-section" style="padding-top: 80px; display: none;">
-    <div class="max-w-7xl mx-auto py-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">Pengelolaan Mood</h2>
-        <button onclick="openMoodModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-          + Tambah Mood
-        </button>
+<div id="page-5" class="page-section" style="padding-top: 80px; display: block;">
+  <div class="max-w-7xl mx-auto py-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-3xl font-bold text-gray-900">Pengelolaan Mood</h2>
+      <button onclick="openMoodModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        + Tambah Mood
+      </button>
+    </div>
+
+    @if(session('success'))
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {{ session('success') }}
       </div>
+    @endif
 
-      @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {{ session('success') }}
-        </div>
-      @endif
-
-      <!-- Moods Table -->
-      <div class="bg-white shadow overflow-hidden sm:rounded-md">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Mood</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Kategori</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              @foreach($moods as $mood)
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{{ $mood->mood_name }}</div>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="text-sm text-gray-500">{{ $mood->description ?? '-' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    {{ $mood->categories_count }} kategori
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onclick="editMood({{ $mood->id }}, '{{ addslashes($mood->mood_name) }}', '{{ addslashes($mood->description ?? '') }}')" 
-                    class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                  <form action="{{ route('dashboard.moods.delete', $mood->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus mood ini?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
-                  </form>
-                </td>
-              </tr>
-              @endforeach
-            </tbody>
-          </table>
-        </div>
+    <!-- Moods Table -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Mood</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Kategori</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            @foreach($moods as $mood)
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ $mood->mood_name }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-500">{{ $mood->description ?? '-' }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                  {{ $mood->categories_count }} kategori
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="editMood({{ $mood->id }}, '{{ addslashes($mood->mood_name) }}', '{{ addslashes($mood->description ?? '') }}')" 
+                  class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                <form action="{{ route('dashboard.moods.delete', $mood->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus mood ini?')">
+                  @csrf
+                  @method('DELETE')
+                  <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            @endforeach
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
+</div>
+
+<!-- Mood Modal -->
+<div id="moodModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg w-full max-w-md p-6">
+    <h3 id="moodModalTitle" class="text-xl font-bold mb-4">Tambah Mood</h3>
+    <form id="moodForm" method="POST" action="{{ route('dashboard.moods.store') }}">
+      @csrf
+      <input type="hidden" name="_method" id="moodMethod" value="POST">
+
+      <input type="text" name="mood_name" id="mood_name" placeholder="Nama Mood" class="w-full border px-3 py-2 mb-3" required>
+      <textarea name="description" id="mood_description" placeholder="Deskripsi" class="w-full border px-3 py-2 mb-3"></textarea>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeMoodModal()" class="px-4 py-2 border rounded">Batal</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JS -->
+<script>
+function openMoodModal() {
+  document.getElementById('moodModal').classList.remove('hidden');
+  document.getElementById('moodModalTitle').innerText = 'Tambah Mood';
+  document.getElementById('moodForm').action = "{{ route('dashboard.moods.store') }}";
+  document.getElementById('moodMethod').value = 'POST';
+  document.getElementById('moodForm').reset();
+}
+
+function editMood(id, name, description) {
+  document.getElementById('moodModal').classList.remove('hidden');
+  document.getElementById('moodModalTitle').innerText = 'Edit Mood';
+  document.getElementById('moodForm').action = '/dashboard/moods/' + id;
+  document.getElementById('moodMethod').value = 'PUT';
+  document.getElementById('mood_name').value = name;
+  document.getElementById('mood_description').value = description;
+}
+
+function closeMoodModal() {
+  document.getElementById('moodModal').classList.add('hidden');
+}
+</script>
 
   <!-- Page 6: Statistics (Admin/Tenant Only) -->
 <div id="page-6" class="page-section"
