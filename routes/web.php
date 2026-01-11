@@ -44,6 +44,46 @@ Route::get('/home', function () {
             $q->where('type', 'mood_click')
     ])->get();
 
+    // Revenue period (default: last 7 days)
+    $startDate = request('start', date('Y-m-d', strtotime('-7 days')));
+    $endDate   = request('end', date('Y-m-d'));
+
+    // Interactions within period (used as proxy for revenue)
+    $interactions = \App\Models\Interaction::whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                        ->with(['menu.tenant','mood'])
+                        ->get();
+
+    // Calculate revenue per tenant by summing menu prices for each interaction
+    $tenantTotals = [];
+    foreach ($interactions as $it) {
+        if (!$it->menu || !$it->menu->tenant) continue;
+        $tName = $it->menu->tenant->tenant_name;
+        $tenantTotals[$tName] = ($tenantTotals[$tName] ?? 0) + ($it->menu->price ?? 0);
+    }
+
+    // Tenant-specific summary for logged-in tenant users
+    $tenant_total = 0;
+    $developerShare = config('moodfood.developer_fee', 0.10); // from config
+    $developerFee = 0;
+    $tenantInteractionSummary = null;
+
+    if (auth()->check() && auth()->user()->tenant) {
+        $tenantName = auth()->user()->tenant->tenant_name;
+        $tenantId   = auth()->user()->tenant->id;
+        $tenant_total = $tenantTotals[$tenantName] ?? 0;
+        $developerFee = round($tenant_total * $developerShare);
+
+        $tenantInteractions = $interactions->filter(function($i) use ($tenantId) {
+            return optional($i->menu)->tenant_id === $tenantId;
+        })->sortByDesc('created_at');
+
+        $tenantInteractionSummary = [
+            'total' => $tenantInteractions->count(),
+            'by_mood' => $tenantInteractions->groupBy(fn($i) => $i->mood->mood_name ?? 'Unknown')->map->count()->toArray(),
+            'recent' => $tenantInteractions->take(5),
+        ];
+    }
+
     return view('home', [
         'stats'      => $stats,
         'menus'      => \App\Models\Menu::with(['tenant','category'])->latest()->get(),
@@ -51,6 +91,13 @@ Route::get('/home', function () {
         'categories' => \App\Models\Category::with('mood')->orderBy('id')->get(),
         'events'     => Event::orderBy('event_name')->get(),
         'tenants'    => \App\Models\Tenant::orderBy('tenant_name')->get(),
+        'startDate'  => $startDate,
+        'endDate'    => $endDate,
+        'tenantTotals' => $tenantTotals,
+        'tenant_total' => $tenant_total,
+        'developerFee' => $developerFee,
+        'developerShare' => $developerShare,
+        'tenantInteractionSummary' => $tenantInteractionSummary,
     ]);
 
 })->name('home');
@@ -67,9 +114,37 @@ Route::get('/mood/{slug}', function ($slug) {
         [strtolower($name)]
     )->firstOrFail();
 
-    $menus = \App\Models\Menu::whereHas('category', fn ($q) =>
-        $q->where('mood_id', $mood->id)
-    )->with(['tenant','category'])->latest()->get();
+    // Prefer rule-based category name matching when rules exist for this mood
+    $rules = \App\Http\Controllers\RecommendationController::getRules();
+    $key = strtolower(str_replace(' ', '-', $mood->mood_name));
+
+    if (! empty($rules[$key])) {
+        $terms = $rules[$key];
+
+        // Match either category name OR menu name/description for rule keywords
+        $menus = \App\Models\Menu::where(function ($mq) use ($terms) {
+            foreach ($terms as $term) {
+                $mq->orWhereHas('category', function ($qc) use ($term) {
+                    $qc->whereRaw('LOWER(category_name) LIKE ?', ['%' . strtolower($term) . '%']);
+                });
+
+                $mq->orWhereRaw('LOWER(menu_name) LIKE ?', ['%' . strtolower($term) . '%']);
+                $mq->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($term) . '%']);
+            }
+        })->with(['tenant','category'])->latest()->get();
+
+        // Fallback: if rule-based returns nothing, use mood association
+        if ($menus->isEmpty()) {
+            $menus = \App\Models\Menu::whereHas('category', fn ($q) =>
+                $q->where('mood_id', $mood->id)
+            )->with(['tenant','category'])->latest()->get();
+        }
+    } else {
+        $menus = \App\Models\Menu::whereHas('category', fn ($q) =>
+            $q->where('mood_id', $mood->id)
+        )->with(['tenant','category'])->latest()->get();
+
+    }
 
     return view('mood', [
         'mood'       => $mood,
@@ -138,6 +213,10 @@ Route::middleware(['auth', 'role:admin,tenant'])->group(function () {
     Route::post('/dashboard/moods', [DashboardController::class, 'storeMood'])->name('dashboard.moods.store');
     Route::put('/dashboard/moods/{id}', [DashboardController::class, 'updateMood'])->name('dashboard.moods.update');
     Route::delete('/dashboard/moods/{id}', [DashboardController::class, 'deleteMood'])->name('dashboard.moods.delete');
+
+    // Export revenue CSV (Admin & Tenant)
+    Route::get('/dashboard/revenue/export', [DashboardController::class, 'exportRevenue'])
+        ->name('dashboard.revenue.export');
 
     // Statistics page (VIEW saja, aman pakai auth)
     Route::get('/statistics', [StatisticsController::class, 'index'])

@@ -143,6 +143,7 @@
                 <input type="date" name="end" value="{{ $endDate ?? '' }}" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
             </div>
             <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Filter</button>
+            <a href="{{ route('dashboard.revenue.export', ['start' => $startDate ?? '', 'end' => $endDate ?? '']) }}" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold ml-2">Export CSV</a>
         </form>
 
         <!-- Chart Total Revenue -->

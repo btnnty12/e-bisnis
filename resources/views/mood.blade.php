@@ -24,6 +24,7 @@
               'lelah' => '😴',
               'biasa aja' => '😐',
               'excited' => '🤩',
+              'marah' => '😡',
           ];
 
           // Emoji tambahan untuk mood baru

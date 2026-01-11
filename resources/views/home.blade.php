@@ -177,6 +177,7 @@
             'lelah' => '😴',
             'biasa-aja' => '😐',
             'excited' => '🤩',
+            'marah' => '😡',
         ];
         $defaultEmojis = ['🙂','😎','😇','🤔','🤗','😋','🤓','😺','😸'];
     @endphp
@@ -422,6 +423,46 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     </div>
 </div>
+
+    @auth
+      @if(auth()->user()->tenant)
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="font-semibold text-lg mb-2">Ringkasan Pendapat</h4>
+            <p class="text-sm text-gray-600">Total interaksi: {{ $tenantInteractionSummary['total'] ?? 0 }}</p>
+            <div class="mt-3">
+              @if(!empty($tenantInteractionSummary['by_mood']))
+                @foreach($tenantInteractionSummary['by_mood'] as $mood => $count)
+                  <span class="inline-block bg-gray-100 px-3 py-1 rounded-full text-sm mr-2 mb-2">{{ $mood }}: {{ $count }}</span>
+                @endforeach
+              @else
+                <p class="text-sm text-gray-500">Belum ada pendapat.</p>
+              @endif
+            </div>
+            @if(!empty($tenantInteractionSummary['recent']))
+              <div class="mt-4">
+                <h5 class="font-medium text-sm mb-2">Interaksi Terbaru</h5>
+                <ul class="text-sm text-gray-600 list-disc pl-5">
+                  @foreach($tenantInteractionSummary['recent'] as $it)
+                    <li>{{ $it->mood->mood_name ?? '—' }} · {{ \Carbon\Carbon::parse($it->created_at)->format('d M Y H:i') }}</li>
+                  @endforeach
+                </ul>
+              </div>
+            @endif
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="font-semibold text-lg mb-2">Biaya ke Developer</h4>
+            <p class="text-sm text-gray-600">Periode: {{ isset($startDate) && isset($endDate) ? (\Carbon\Carbon::parse($startDate)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($endDate)->format('d M Y')) : '-' }}</p>
+            <p class="text-2xl font-bold mt-4">Total Revenue: Rp {{ number_format($tenant_total ?? 0,0,',','.') }}</p>
+            <p class="text-lg mt-2 text-red-600">Biaya ({{ isset($developerShare) ? ($developerShare*100) : 0 }}%): Rp {{ number_format($developerFee ?? 0,0,',','.') }}</p>
+            <div class="mt-4">
+              <a href="{{ route('dashboard.revenue.export', ['start' => $startDate ?? '', 'end' => $endDate ?? '']) }}" class="text-sm text-green-600 hover:underline">⬇️ Download CSV Laporan</a>
+            </div>
+          </div>
+        </div>
+      @endif
+    @endauth
 
 <!-- Recommendation Modal -->
       <div id="recommendation-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-60 z-50 flex items-center justify-center px-4 py-6">

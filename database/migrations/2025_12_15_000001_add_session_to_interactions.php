@@ -15,7 +15,16 @@ return new class extends Migration
         });
 
         // Make user_id nullable (raw statement to avoid requiring doctrine/dbal)
-        DB::statement('ALTER TABLE interactions MODIFY user_id BIGINT UNSIGNED NULL');
+        // Skip raw ALTER for SQLite (used in tests) because SQLite doesn't support MODIFY syntax
+        try {
+            $driver = DB::getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        } catch (\Exception $e) {
+            $driver = null;
+        }
+
+        if ($driver && $driver !== 'sqlite') {
+            DB::statement('ALTER TABLE interactions MODIFY user_id BIGINT UNSIGNED NULL');
+        }
     }
 
     public function down()
@@ -25,6 +34,14 @@ return new class extends Migration
         });
 
         // Revert user_id to not null (may fail if rows with null exist)
-        DB::statement('ALTER TABLE interactions MODIFY user_id BIGINT UNSIGNED NOT NULL');
+        try {
+            $driver = DB::getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        } catch (\Exception $e) {
+            $driver = null;
+        }
+
+        if ($driver && $driver !== 'sqlite') {
+            DB::statement('ALTER TABLE interactions MODIFY user_id BIGINT UNSIGNED NOT NULL');
+        }
     }
 };

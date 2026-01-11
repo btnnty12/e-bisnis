@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Models\Event;
 use App\Models\Rating;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -62,6 +63,7 @@ class DashboardController extends Controller
         // Dummy revenue data for demonstration
         $data = [];
         $tenantData = [];
+        $tenantTotals = array_fill_keys($tenants, 0);
         $startTimestamp = strtotime($startDate);
         $endTimestamp   = strtotime($endDate);
         
@@ -80,6 +82,7 @@ class DashboardController extends Controller
                 }
                 $dailyTotal += $tenantTotal;
                 $perTenant[$tenant] = $tenantTotal;
+                $tenantTotals[$tenant] += $tenantTotal;
             }
             
             $data[] = (object)[
@@ -93,7 +96,80 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('dashboard.index', compact('stats', 'moods', 'eventStats', 'tenants', 'tenantData', 'data', 'startDate', 'endDate'));
+        // Tenant-specific summary (for logged-in tenant users)
+        $tenant_total = 0;
+        $developerShare = config('moodfood.developer_fee', 0.10); // from config
+        $developerFee = 0;
+        $tenantInteractionSummary = null;
+
+        if (auth()->check() && auth()->user()->tenant) {
+            $tenantName = auth()->user()->tenant->tenant_name;
+            $tenantId   = auth()->user()->tenant->id;
+            $tenant_total = $tenantTotals[$tenantName] ?? 0;
+            $developerFee = round($tenant_total * $developerShare);
+
+            $tenantInteractions = \App\Models\Interaction::whereHas('menu', function($q) use ($tenantId) {
+                $q->where('tenant_id', $tenantId);
+            })->with('mood')->orderBy('created_at', 'desc')->get();
+
+            $tenantInteractionSummary = [
+                'total' => $tenantInteractions->count(),
+                'by_mood' => $tenantInteractions->groupBy(function($i){ return $i->mood->mood_name ?? 'Unknown'; })->map->count()->toArray(),
+                'recent' => $tenantInteractions->take(5),
+            ];
+        }
+
+        return view('dashboard.index', compact('stats', 'moods', 'eventStats', 'tenants', 'tenantData', 'data', 'startDate', 'endDate', 'tenantTotals', 'tenant_total', 'developerFee', 'developerShare', 'tenantInteractionSummary'));
+    }
+
+    /**
+     * Export revenue per tenant as CSV (Admin sees all, Tenant sees theirs only)
+     */
+    public function exportRevenue(Request $request)
+    {
+        $startDate = $request->query('start', date('Y-m-d', strtotime('-7 days')));
+        $endDate   = $request->query('end', date('Y-m-d'));
+
+        $interactions = \App\Models\Interaction::whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])
+            ->with(['menu.tenant','mood'])
+            ->get();
+
+        // Aggregate per tenant
+        $rows = [];
+        foreach ($interactions as $it) {
+            if (!$it->menu || !$it->menu->tenant) continue;
+            $tName = $it->menu->tenant->tenant_name;
+            if (!isset($rows[$tName])) {
+                $rows[$tName] = ['revenue' => 0, 'interactions' => 0];
+            }
+            $rows[$tName]['revenue'] += ($it->menu->price ?? 0);
+            $rows[$tName]['interactions']++;
+        }
+
+        // If tenant user, limit to their tenant only
+        if (auth()->check() && auth()->user()->tenant) {
+            $tName = auth()->user()->tenant->tenant_name;
+            $rows = array_filter($rows, fn($k) => $k === $tName, ARRAY_FILTER_USE_KEY);
+        }
+
+        $filename = sprintf('revenue_%s_%s.csv', $startDate, $endDate);
+        $developerShare = config('moodfood.developer_fee', 0.10);
+
+        $callback = function() use ($rows, $developerShare) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Tenant', 'Total Revenue', 'Total Interactions', 'Developer Fee']);
+            foreach ($rows as $tenantName => $r) {
+                fputcsv($handle, [$tenantName, $r['revenue'], $r['interactions'], round($r['revenue'] * $developerShare)]);
+            }
+            fclose($handle);
+        };
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 
     /**

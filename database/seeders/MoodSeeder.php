@@ -12,6 +12,7 @@ class MoodSeeder extends Seeder
         $moods = [
             ['mood_name' => 'Senang', 'description' => 'Merasa bahagia'],
             ['mood_name' => 'Sedih', 'description' => 'Merasa murung'],
+            ['mood_name' => 'Marah', 'description' => 'Merasa marah'],
             ['mood_name' => 'Stress', 'description' => 'Merasa tertekan'],
             ['mood_name' => 'Lelah', 'description' => 'Merasa capek'],
             ['mood_name' => 'Biasa Aja', 'description' => 'Netral'],

@@ -44,7 +44,9 @@ Aplikasi web untuk memberikan rekomendasi makanan berdasarkan mood pengguna. Sis
 - **Statistik**: Laporan statistik sebelum/sesudah tanggal dan per event
 - **Menu Management**: CRUD menu dengan informasi nama, harga, tenant, dan kategori
 - **Kategori Mood**: Pengelolaan kategori yang terkait dengan mood
-- **Mood Management**: Pengelolaan mood (Senang, Sedih, Stress, Lelah, Biasa Aja, Excited)
+- **Mood Management**: Pengelolaan mood (Senang, Sedih, Stress, Lelah, Biasa Aja, Excited, Marah)
+- **Penghasilan & Biaya Developer**: Perhitungan pendapatan berdasarkan Interaksi × Harga menu; biaya developer dapat dikonfigurasi melalui `MOODFOOD_DEVELOPER_FEE` di `.env`.
+- **Export CSV**: Admin dan tenant dapat mengekspor ringkasan pendapatan menjadi CSV via route `/dashboard/revenue/export`. 
 
 ## Routes
 
@@ -53,6 +55,13 @@ Aplikasi web untuk memberikan rekomendasi makanan berdasarkan mood pengguna. Sis
 - `/dashboard/categories` - Pengelolaan kategori mood
 - `/dashboard/moods` - Pengelolaan mood
 - `/statistics` - Halaman statistik
+
+## Catatan Singkat (Tambahan)
+
+- Untuk memperbarui atau menambahkan data mood: jalankan `php artisan db:seed --class=MoodSeeder`.
+- Developer fee: set `MOODFOOD_DEVELOPER_FEE` di `.env` (default `0.10`).
+- Export CSV: akses `/dashboard/revenue/export` sebagai admin atau tenant untuk mengunduh ringkasan pendapatan.
+
 
 ## About Laravel
 
